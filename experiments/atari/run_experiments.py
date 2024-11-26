@@ -10,11 +10,13 @@ def parse_args():
 
     parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet"], required=True)
     parser.add_argument("--env", type=str, choices=["ALE/SpaceInvaders-v5", "ALE/Freeway-v5"], default="ALE/SpaceInvaders-v5")
-    parser.add_argument("--seed", type=int, required=False, default=None)
+    parser.add_argument("--seed", type=int, required=False, default=42)
 
     parser.add_argument("--start-mode", type=int, required=True)
     parser.add_argument("--first-mode", type=int, required=True)
     parser.add_argument("--last-mode", type=int, required=True)
+    parser.add_argument("--debug", type=bool, default=False)
+    
     # fmt: on
     return parser.parse_args()
 
@@ -23,6 +25,7 @@ args = parse_args()
 
 modes = TASKS[args.env]
 start_mode = args.start_mode
+debug = args.debug
 
 if args.algorithm == "finetune":
     model_type = "cnn-simple-ft"
@@ -62,6 +65,8 @@ for i, task_id in enumerate(modes[first_idx:]):
         # single previous module
         elif args.algorithm in ["finetune", "packnet"]:
             params += f" --prev-units agents/{run_name(task_id-1)}"
+            
+    params += f" --wandb_mode=" + ("online" if not debug else "offline")
 
     # Launch experiment
     cmd = f"python3 run_ppo.py {params}"

@@ -349,7 +349,7 @@ class FirstModuleWrapper(nn.Module):
         self.ret_probs = ret_probs
         self.transform_output = transform_output
 
-    def forward(self, x, ret_encoder_out=False):
+    def forward(self, x, ret_encoder_out=False, prevs_to_noise=0):
         h = self.encoder(x)
         v = self.transform_output(self.model(h))
         pi = logit2prob(v) if self.ret_probs else v
