@@ -230,7 +230,6 @@ if __name__ == "__main__":
         agent = ProgressiveNetAgent(
             envs, prevs_paths=args.prev_units, map_location=device
         ).to(device)
-
     elif args.model_type == "packnet":
         # retraining in 20% of the total timesteps
         packnet_retrain_start = args.total_timesteps - int(args.total_timesteps * 0.2)
