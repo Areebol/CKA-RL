@@ -73,7 +73,7 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = True
+    capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
@@ -126,11 +126,11 @@ class Args:
 def make_env(env_id, idx, capture_video, run_name, mode=None, dino=False):
     def thunk():
         if mode is None:
-            env = gym.make(env_id, render_mode='rgb_array')
-            # env = gym.make(env_id)
+            # env = gym.make(env_id, render_mode='rgb_array')
+            env = gym.make(env_id)
         else:
-            env = gym.make(env_id, mode=mode, render_mode='rgb_array')
-            # env = gym.make(env_id, mode=mode)
+            # env = gym.make(env_id, mode=mode, render_mode='rgb_array')
+            env = gym.make(env_id, mode=mode)
         if capture_video and idx == 0:
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = gym.wrappers.RecordEpisodeStatistics(env)
