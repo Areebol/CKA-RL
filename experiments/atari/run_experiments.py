@@ -8,7 +8,7 @@ def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet"], required=True)
+    parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet", "fair-finetune"], required=True)
     parser.add_argument("--env", type=str, choices=["ALE/SpaceInvaders-v5", "ALE/Freeway-v5"], default="ALE/SpaceInvaders-v5")
     parser.add_argument("--seed", type=int, required=False, default=42)
 
@@ -37,6 +37,8 @@ elif args.algorithm == "prog-net":
     model_type = "prog-net"
 elif args.algorithm == "packnet":
     model_type = "packnet"
+elif args.algorithm == "fair-finetune":
+    model_type = "cnn-fair-ft"
 
 seed = random.randint(0, 1e6) if args.seed is None else args.seed
 
