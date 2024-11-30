@@ -28,7 +28,7 @@ from models import (
     CnnCompoNetAgent,
     ProgressiveNetAgent,
     PackNetAgent,
-    CnnFairAgent,
+    CnnTvNetAgent, 
 )
 
 
@@ -42,8 +42,7 @@ class Args:
         "cnn-componet",
         "prog-net",
         "packnet",
-        "cnn-fair-ft",
-        "tv-net",
+        "cnn-tvnet", # Add TVNET
     ]
     """The name of the model to use as agent."""
     dino_size: Literal["s", "b", "l", "g"] = "s"
@@ -255,21 +254,13 @@ if __name__ == "__main__":
                 restart_actor_critic=True,
                 freeze_bias=True,
             ).to(device)
-    elif args.model_type == "tv-net":
-        ...
-        # agent = CnnTVNetAgent()
-    elif args.model_type == "cnn-fair-ft":
-        if len(args.prev_units) > 0:
-            agent = CnnFairAgent.load(
-                args.prev_units[0], envs, load_critic=False, reset_actor=True
-            ).to(device)
-        else:
-            agent = CnnFairAgent(envs).to(device)
+    elif args.model_type == "cnn-tvnet":
+        agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, finetune_encoder=args.componet_finetune_encoder, map_location=device).to(device)
     else:
         print(f"Model type {args.model_type} is not valid.")
         quit(1)
         
-    print(agent)
+    # print(agent)
         
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
 
