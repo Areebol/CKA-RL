@@ -5,3 +5,4 @@ from .progressive_net import ProgressiveNetAgent
 from .packnet import PackNetAgent
 from .cnn_fair import CnnFairAgent
 from .cnn_tvnet import CnnTvNetAgent
+from .cnn_simple_tvnet import CnnSimpleTvNetAgent

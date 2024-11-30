@@ -8,7 +8,8 @@ def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet", "tvnet"], required=True)
+    # parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet", "tvnet"], required=True)
+    parser.add_argument("--algorithm", type=str, required=True)
     parser.add_argument("--env", type=str, choices=["ALE/SpaceInvaders-v5", "ALE/Freeway-v5"], default="ALE/SpaceInvaders-v5")
     parser.add_argument("--seed", type=int, required=False, default=42)
 
@@ -38,6 +39,7 @@ model_type_map = {
     "prog-net": "prog-net",
     "packnet": "packnet",
     "tvnet": "cnn-tvnet", # Add tvnet
+    "cnn-tvnet-fte": "cnn-tvnet-fte",
 }
 
 model_type = model_type_map.get(args.algorithm)
