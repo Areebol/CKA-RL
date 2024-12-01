@@ -16,7 +16,11 @@ class CnnSimpleAgent(nn.Module):
     def __init__(self, envs):
         super().__init__()
         self.network = CnnEncoder(hidden_dim=512, layer_init=layer_init)
-        self.actor = layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01)
+        self.actor = nn.Sequential(
+            layer_init(nn.Linear(512, 512)),
+            nn.ReLU(),
+            layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01),
+        )
         self.critic = layer_init(nn.Linear(512, 1), std=1)
 
     def get_value(self, x):

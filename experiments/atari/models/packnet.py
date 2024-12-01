@@ -16,6 +16,7 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 class PackNetAgent(nn.Module):
     def __init__(self, envs, task_id, is_first_task, total_task_num):
         super().__init__()
+        self.task_id = task_id
         self.network = PackNet(
             hidden_dim=512,
             task_id=task_id,
@@ -24,7 +25,11 @@ class PackNetAgent(nn.Module):
             layer_init=layer_init,
         )
         self.num_actions = envs.single_action_space.n
-        self.actor = layer_init(nn.Linear(512, self.num_actions), std=0.01)
+        self.actor = nn.Sequential(
+            layer_init(nn.Linear(512, 512)),
+            nn.ReLU(),
+            layer_init(nn.Linear(512, self.num_actions), std=0.01),
+        )
         self.critic = layer_init(nn.Linear(512, 1), std=1)
 
         self.retrain_mode = False
@@ -42,7 +47,7 @@ class PackNetAgent(nn.Module):
 
     def save(self, dirname):
         # un-do the masking for the current task
-        self.network.set_view(None)
+        self.network.set_view(self.task_id)
 
         os.makedirs(dirname, exist_ok=True)
         torch.save(self, f"{dirname}/packnet.pt")
@@ -61,7 +66,11 @@ class PackNetAgent(nn.Module):
             model.network.task_id = task_id
 
         if restart_actor_critic:
-            model.actor = layer_init(nn.Linear(512, model.num_actions), std=0.01)
+            model.actor = nn.Sequential(
+            layer_init(nn.Linear(512, 512)),
+            nn.ReLU(),
+            layer_init(nn.Linear(512, model.num_actions), std=0.01),
+        )
             model.critic = layer_init(nn.Linear(512, 1), std=1)
 
         if freeze_bias:

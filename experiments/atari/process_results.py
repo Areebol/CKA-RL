@@ -35,6 +35,7 @@ METHOD_NAMES = {
     "cnn-componet": "CompoNet",
     "prog-net": "ProgressiveNet",
     "packnet": "PackNet",
+    # "cnn-tvnet": "TVNet",
 }
 
 METHOD_COLORS = {
@@ -43,16 +44,19 @@ METHOD_COLORS = {
     "cnn-componet": "tab:blue",
     "prog-net": "tab:green",
     "packnet": "tab:purple",
+    # "cnn-tvnet": "tab:red",
 }
 
-METHOD_ORDER = ["cnn-simple", "cnn-componet", "cnn-simple-ft", "prog-net", "packnet"]
+METHOD_ORDER = ["cnn-simple", "cnn-componet", "cnn-simple-ft", "prog-net", 
+                "packnet", ]
+                # "cnn-tvnet"]
 
 
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/envs/Freeway",
-        choices=["data/envs/Freeway", "data/envs/SpaceInvaders"],
+        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/envs/SpaceInvaders1"],
         help="path to the directory where the CSV of each task is stored")
     parser.add_argument("--eval-results", type=str, default="data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")

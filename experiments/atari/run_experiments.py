@@ -1,22 +1,26 @@
 import subprocess
 import argparse
 import random
-from task_utils import TASKS
+from task_utils import TASKS, get_method_type
 from icecream import ic
-
+    
+method_choices = ["baseline",         # F1
+                  "finetune",         # FN
+                  "componet",         # CompoNet
+                  "packnet",          # PackNet
+                  "prognet",          # ProgNet
+                  "tv_1",             # TV_1
+                  ]
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
 
-    # parser.add_argument("--algorithm", type=str, choices=["componet", "finetune", "from-scratch", "prog-net", "packnet", "tvnet"], required=True)
-    parser.add_argument("--algorithm", type=str, required=True)
-    parser.add_argument("--env", type=str, choices=["ALE/SpaceInvaders-v5", "ALE/Freeway-v5"], default="ALE/SpaceInvaders-v5")
+    parser.add_argument("--method_type", type=str, choices=method_choices, required=True)
+    parser.add_argument("--env", type=str, choices=["ALE/SpaceInvaders-v5", "ALE/Freeway-v5"], default="ALE/Freeway-v5")
     parser.add_argument("--seed", type=int, required=False, default=42)
 
-    parser.add_argument("--start-mode", type=int, required=True)
     parser.add_argument("--first-mode", type=int, required=True)
     parser.add_argument("--last-mode", type=int, required=True)
-    parser.add_argument("--timesteps", type=int, default=1e6)
     parser.add_argument("--debug", type=bool, default=False)
     
     # fmt: on
@@ -24,59 +28,51 @@ def parse_args():
 
 
 args = parse_args()
-
+print(args)
 modes = TASKS[args.env]
-timesteps = args.timesteps
-start_mode = args.start_mode
 first_mode = args.first_mode
 last_mode = args.last_mode
 debug = args.debug
+method_type = args.method_type
 
-model_type_map = {
-    "finetune": "cnn-simple-ft",
-    "componet": "cnn-componet",
-    "from-scratch": "cnn-simple",
-    "prog-net": "prog-net",
-    "packnet": "packnet",
-    "tvnet": "cnn-tvnet", # Add tvnet
-    "cnn-tvnet-fte": "cnn-tvnet-fte",
-}
-
-model_type = model_type_map.get(args.algorithm)
 
 seed = random.randint(0, 1e6) if args.seed is None else args.seed
 
+env_name = args.env.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
 run_name = (
-    lambda task_id: f"{args.env.replace('/', '-')}_{task_id}__{model_type}__run_ppo__{seed}"
+    lambda task_id: f"{env_name}_{task_id}_{get_method_type(args)}" # e.g. Freeway_1_FN、Freeway_2_TV_1
 )
 
-first_idx = modes.index(start_mode)
+first_idx = modes.index(first_mode)
 last_idx = modes.index(last_mode)
-# ic(first_idx)
-# ic(last_idx)
-# ic(modes)
-for i, task_id in enumerate(modes[first_idx:last_idx+1]):
-    params = f"--track --model-type={model_type} --env-id={args.env} --seed={seed}"
-    params += f" --mode={task_id} --save-dir=agents --total-timesteps={timesteps}"
 
-    # algorithm specific CLI arguments
-    if args.algorithm == "componet":
+for i, task_id in enumerate(modes[first_idx:last_idx+1]):
+    # params
+    save_dir = f"agents/{env_name}"
+    params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
+    params += f" --mode={task_id} --save-dir={save_dir}"
+    
+    # debug
+    params += (" --track" if not debug else " --no-track")
+    if debug:
+        params += f" --total-timesteps=10000"
+
+    # method specific CLI arguments
+    if args.method_type == "componet":
         params += " --componet-finetune-encoder"
-    if args.algorithm == "packnet":
+    if args.method_type == "packnet":
         params += f" --total-task-num={len(modes)}"
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.algorithm in ["componet", "prog-net", "tvnet"]:
+        if args.method_type in ["componet", "prognet", "tv_1"]:
             params += " --prev-units"
             for i in modes[: modes.index(task_id)]:
-                params += f" agents/{run_name(i)}"
+                params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.algorithm in ["finetune", "packnet"]:
-            params += f" --prev-units agents/{run_name(task_id-1)}"
+        elif args.method_type in ["finetune", "packnet"]:
+            params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
             
-    params += f" --wandb_mode=" + ("online" if not debug else "offline")
-
     # Launch experiment
     cmd = f"python3 run_ppo.py {params}"
     print(cmd)

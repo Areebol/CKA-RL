@@ -6,3 +6,5 @@ experiments/meta-world/data
 videos
 agents
 tmp
+*.pdf
+*.csv

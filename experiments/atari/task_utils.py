@@ -21,3 +21,19 @@ def path_from_other_mode(base_path, new_mode):
     double_sep_idx = base_path.index("__")
     new_path = base_path[: sep_idx + 1] + str(new_mode) + base_path[double_sep_idx:]
     return new_path
+
+def get_method_type(args):
+    if args.method_type == "baseline":
+        return "F1"
+    elif args.method_type == "finetune":
+        return "FN"
+    elif args.method_type == "componet":
+        return "CompoNet"
+    elif args.method_type == "packnet":
+        return "PackNet"
+    elif args.method_type == "prognet":
+        return "ProgNet"
+    elif args.method_type == "tv_1":
+        return "TV_1"
+    else:
+        return None

@@ -69,6 +69,5 @@ if __name__ == "__main__":
         finetune_encoder=False,
     )
     print("com-net",agent)
-   
-    agent = CnnFairAgent(envs)
-    print("cnn-fair",agent)
+    for name, param in agent.named_parameters():
+        print(name)

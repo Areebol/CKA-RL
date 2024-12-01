@@ -29,8 +29,10 @@ class ProgressiveNetAgent(nn.Module):
             layer_init=layer_init,
         )
 
-        self.actor = layer_init(
-            nn.Linear(hidden_dim, envs.single_action_space.n), std=0.01
+        self.actor = nn.Sequential(
+            layer_init(nn.Linear(512, 512)),
+            nn.ReLU(),
+            layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01),
         )
         self.critic = layer_init(nn.Linear(hidden_dim, 1), std=1)
 

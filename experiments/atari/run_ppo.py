@@ -11,6 +11,7 @@ import torch.optim as optim
 import tyro
 from typing import Literal, Tuple, Optional
 import pathlib
+from task_utils import get_method_type
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -24,28 +25,17 @@ from stable_baselines3.common.atari_wrappers import (  # isort:skip
 
 from models import (
     CnnSimpleAgent,
-    DinoSimpleAgent,
     CnnCompoNetAgent,
     ProgressiveNetAgent,
     PackNetAgent,
     CnnTvNetAgent, 
-    CnnSimpleTvNetAgent, 
 )
 
 
 @dataclass
 class Args:
     # Model type
-    model_type: Literal[
-        "cnn-simple",
-        "cnn-simple-ft",
-        "dino-simple",
-        "cnn-componet",
-        "prog-net",
-        "packnet",
-        "cnn-tvnet", # Add tvnet 2 layer, finetune encoder from sketch
-        "cnn-tvnet-fte", # Add tvnet 2 layer, finetune encoder from previous task
-    ]
+    method_type: str = "baseline"
     """The name of the model to use as agent."""
     dino_size: Literal["s", "b", "l", "g"] = "s"
     """Size of the dino model (only needed when using dino)"""
@@ -60,7 +50,7 @@ class Args:
     total_task_num: Optional[int] = None
     """Total number of tasks, required when using PackNet"""
     prevs_to_noise: Optional[int] = 0
-    """Number of previous policies to set to randomly selected distributions, only valid when model_type is `cnn-componet`"""
+    """Number of previous policies to set to randomly selected distributions, only valid when method_type is `componet`"""
 
     # Experiment arguments
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
@@ -73,7 +63,7 @@ class Args:
     """if toggled, cuda will be enabled by default"""
     track: bool = False
     """if toggled, this experiment will be tracked with Weights and Biases"""
-    wandb_project_name: str = "ppo-atari"
+    wandb_project_name: str = "Atari-PPO"
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
@@ -81,7 +71,7 @@ class Args:
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
-    env_id: str = "BreakoutNoFrameskip-v4"
+    env_id: str = "ALE/Freeway-v5"
     """the id of the environment"""
     total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
@@ -124,23 +114,16 @@ class Args:
     num_iterations: int = 0
     """the number of iterations (computed in runtime)"""
 
-    wandb_mode: Literal["online","offline"] = "offline"
-    """the mode of wandb logger"""
 
-def make_env(env_id, idx, capture_video, run_name, mode=None, dino=False):
+def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
         if mode is None:
-            # env = gym.make(env_id, render_mode='rgb_array')
             env = gym.make(env_id)
         else:
-            # env = gym.make(env_id, mode=mode, render_mode='rgb_array')
             env = gym.make(env_id, mode=mode)
         if capture_video and idx == 0:
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = gym.wrappers.RecordEpisodeStatistics(env)
-        # if capture_video:
-        #     if idx == 0:
-        #         env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         env = NoopResetEnv(env, noop_max=30)
         env = MaxAndSkipEnv(env, skip=4)
         env = EpisodicLifeEnv(env)
@@ -148,28 +131,27 @@ def make_env(env_id, idx, capture_video, run_name, mode=None, dino=False):
             env = FireResetEnv(env)
         env = ClipRewardEnv(env)
 
-        if not dino:
-            env = gym.wrappers.ResizeObservation(env, (84, 84))
-            env = gym.wrappers.GrayScaleObservation(env)
-        else:
-            env = gym.wrappers.ResizeObservation(env, (224, 224))
+        env = gym.wrappers.ResizeObservation(env, (84, 84))
+        env = gym.wrappers.GrayScaleObservation(env)        
         env = gym.wrappers.FrameStack(env, 4)
         return env
 
     return thunk
 
-
+    
 if __name__ == "__main__":
     args = tyro.cli(Args)
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
-    m = f"_{args.mode}" if args.mode is not None else ""
-    run_name = f"{args.env_id.replace('/', '-')}{m}__{args.model_type}__{args.exp_name}__{args.seed}"
-    print("*** Run's name:", run_name)
+    m = f"{args.mode}" if args.mode is not None else ""
+    env_name = args.env_id.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
+    run_name = f"{env_name}_{m}_{get_method_type(args)}"
+    logs = {"global_step": [], "episodic_return": []}
+    
+    print("Run's name:", run_name)
     if args.track:
         import wandb
-
         wandb.init(
             project=args.wandb_project_name,
             entity=args.wandb_entity,
@@ -178,7 +160,6 @@ if __name__ == "__main__":
             name=run_name,
             monitor_gym=True,
             save_code=True,
-            mode=args.wandb_mode,
         )
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
@@ -196,12 +177,10 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # env setup
-    dino = "dino" in args.model_type
     envs = gym.vector.SyncVectorEnv(
         [
             make_env(
-                args.env_id, i, args.capture_video, run_name, mode=args.mode, dino=dino
-            )
+                args.env_id, i, args.capture_video, run_name, mode=args.mode)
             for i in range(args.num_envs)
         ],
     )
@@ -209,32 +188,28 @@ if __name__ == "__main__":
         envs.single_action_space, gym.spaces.Discrete
     ), "only discrete action space is supported"
 
-    print(f"*** Model: {args.model_type} ***")
-    if args.model_type == "cnn-simple":
+    print(f"*** Method: {args.method_type} ***")
+    if args.method_type == "baseline":
         agent = CnnSimpleAgent(envs).to(device)
-    elif args.model_type == "cnn-simple-ft":
+    elif args.method_type == "finetune":
         if len(args.prev_units) > 0:
             agent = CnnSimpleAgent.load(
                 args.prev_units[0], envs, load_critic=False, reset_actor=True
             ).to(device)
         else:
             agent = CnnSimpleAgent(envs).to(device)
-    elif args.model_type == "dino-simple":
-        agent = DinoSimpleAgent(
-            envs, dino_size=args.dino_size, frame_stack=4, device=device
-        ).to(device)
-    elif args.model_type == "cnn-componet":
+    elif args.method_type == "componet":
         agent = CnnCompoNetAgent(
             envs,
             prevs_paths=args.prev_units,
             finetune_encoder=args.componet_finetune_encoder,
             map_location=device,
         ).to(device)
-    elif args.model_type == "prog-net":
+    elif args.method_type == "prognet":
         agent = ProgressiveNetAgent(
             envs, prevs_paths=args.prev_units, map_location=device
         ).to(device)
-    elif args.model_type == "packnet":
+    elif args.method_type == "packnet":
         # retraining in 20% of the total timesteps
         packnet_retrain_start = args.total_timesteps - int(args.total_timesteps * 0.2)
 
@@ -256,16 +231,11 @@ if __name__ == "__main__":
                 restart_actor_critic=True,
                 freeze_bias=True,
             ).to(device)
-    elif args.model_type == "cnn-tvnet":
+    elif args.method_type == "tv_1":
         agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
-                              finetune_encoder=False, 
-                              map_location=device).to(device)
-    elif args.model_type == "cnn-tvnet-fte":
-        agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
-                              finetune_encoder=True, 
                               map_location=device).to(device)
     else:
-        print(f"Model type {args.model_type} is not valid.")
+        print(f"Method type {args.method_type} is not valid.")
         quit(1)
         
     print(agent)
@@ -307,7 +277,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 if (
                     args.track
-                    and args.model_type == "cnn-componet"
+                    and args.method_type == "componet"
                     and global_step % 100 == 0
                 ):
                     action, logprob, _, value = agent.get_action_and_value(
@@ -316,7 +286,7 @@ if __name__ == "__main__":
                         global_step=global_step,
                         prevs_to_noise=args.prevs_to_noise,
                     )
-                elif args.model_type == "cnn-componet":
+                elif args.method_type == "componet":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
                     )
@@ -345,6 +315,8 @@ if __name__ == "__main__":
                         print(
                             f"global_step={global_step}, episodic_return={info['episode']['r']}"
                         )
+                        logs["global_step"].append(global_step)
+                        logs["episodic_return"].append(info["episode"]["r"].item())
                         writer.add_scalar(
                             "charts/episodic_return", info["episode"]["r"], global_step
                         )
@@ -389,7 +361,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                if args.model_type == "cnn-componet":
+                if args.method_type == "componet":
                     _, newlogprob, entropy, newvalue = agent.get_action_and_value(
                         b_obs[mb_inds] / 255.0,
                         b_actions.long()[mb_inds],
@@ -444,7 +416,7 @@ if __name__ == "__main__":
                 optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                if args.model_type == "packnet":
+                if args.method_type == "packnet":
                     if global_step >= packnet_retrain_start:
                         agent.start_retraining()  # can be called multiple times, only the first counts
                     agent.before_update()
@@ -475,7 +447,14 @@ if __name__ == "__main__":
 
     envs.close()
     writer.close()
-
+    
+    import pandas as pd
+    df = pd.DataFrame(logs)
+    log_dir = f"data/{env_name}/{args.method_type}/{args.mode}" 
+    os.makedirs(log_dir, exist_ok=True)
+    df.to_csv(f"{log_dir}/returns.csv", index=False)
+    print("saved log return to csv, return length:", len(logs["episodic_return"]))
+    
     if args.save_dir is not None:
         print(f"Saving trained agent in `{args.save_dir}` with name `{run_name}`")
         agent.save(dirname=f"{args.save_dir}/{run_name}")
