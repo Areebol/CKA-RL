@@ -30,24 +30,24 @@ SETTINGS = {
 }
 
 METHOD_NAMES = {
-    "cnn-simple": "Baseline",
-    "cnn-simple-ft": "FT",
-    "cnn-componet": "CompoNet",
-    "prog-net": "ProgressiveNet",
+    "baseline": "Baseline",
+    "finetune": "FT",
+    "componet": "CompoNet",
+    "prognet": "ProgressiveNet",
     "packnet": "PackNet",
     # "cnn-tvnet": "TVNet",
 }
 
 METHOD_COLORS = {
-    "cnn-simple": "darkgray",
-    "cnn-simple-ft": "tab:orange",
-    "cnn-componet": "tab:blue",
-    "prog-net": "tab:green",
+    "baseline": "darkgray",
+    "finetune": "tab:orange",
+    "componet": "tab:blue",
+    "prognet": "tab:green",
     "packnet": "tab:purple",
     # "cnn-tvnet": "tab:red",
 }
 
-METHOD_ORDER = ["cnn-simple", "cnn-componet", "cnn-simple-ft", "prog-net", 
+METHOD_ORDER = ["baseline", "componet", "finetune", "prognet", 
                 "packnet", ]
                 # "cnn-tvnet"]
 
@@ -56,9 +56,9 @@ def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/envs/Freeway",
-        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/envs/SpaceInvaders1"],
+        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/Freeway"],
         help="path to the directory where the CSV of each task is stored")
-    parser.add_argument("--eval-results", type=str, default="data/eval_results.csv",
+    parser.add_argument("--eval-results", type=str, default="None", #"data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")
     # fmt: on
     return parser.parse_args()
@@ -112,7 +112,7 @@ def compute_success(
     """
     data_cols = df.columns[df.columns.str.endswith("episodic_return")]
     # get the name of the method from the column's name
-    methods = [col.split(" ")[1] for col in data_cols]
+    methods = [col.split("-")[0] for col in data_cols]
 
     # compute the success_score automatically as
     # the `sc_percent` % of the average return of
@@ -188,7 +188,7 @@ def compute_success(
 
 
 def compute_forward_transfer(data):
-    baseline_method = "cnn-simple"
+    baseline_method = "baseline"
     methods = list(METHOD_NAMES.keys())
 
     ft_data = {}
@@ -329,7 +329,7 @@ def process_eval(df, data, success_scores, env):
             s = sel["ep ret"].values >= success_scores[task_id]
 
             # the performance when the current task was task_id
-            past_perf = data[task_id]["cnn-simple-ft"]["final_success"]
+            past_perf = data[task_id]["finetune"]["final_success"]
 
             perf_total += list(s)
             forg_total += list(past_perf - s)

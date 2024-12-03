@@ -13,7 +13,7 @@ from stable_baselines3.common.atari_wrappers import (  # isort:skip
 
 from models import (
     CnnSimpleAgent,
-    DinoSimpleAgent,
+    # DinoSimpleAgent,
     CnnCompoNetAgent,
     ProgressiveNetAgent,
     PackNetAgent,
@@ -27,7 +27,7 @@ def parse_arguments():
     # fmt: off
     parser.add_argument("--load", type=str, required=True)
 
-    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--mode", type=int, default=None)
 
     parser.add_argument("--max-timesteps", type=int, default=1000)
@@ -56,14 +56,25 @@ def make_env(env_id, idx, run_name, render_mode=None, mode=None):
 
     return thunk
 
+def convert_algorithm(algorithm):
+    conversion_dict = {
+        "F1": "baseline",
+        "FN": "finetune",
+        "CompoNet": "componet",
+        "PackNet": "packnet",
+        "ProgNet": "prognet",
+        "TV_1": "tv_1",
+    }
+    return conversion_dict.get(algorithm, "unknown")
 
 if __name__ == "__main__":
     args = parse_arguments()
 
-    env_name, train_mode, algorithm, seed = parse_name_info(args.load.split("/")[-1])
-
+    # env_name, train_mode, algorithm, seed = parse_name_info(args.load.split("/")[-1])
+    env_name, train_mode, algorithm = parse_name_info(args.load.split("/")[-1])
+    algorithm = convert_algorithm(algorithm)
     mode = train_mode if args.mode is None else args.mode
-    seed = seed if args.seed is None else args.seed
+    seed = args.seed
 
     print(
         f"\nEnvironment: {env_name}, train/test mode: {train_mode}/{mode}, algorithm: {algorithm}, seed: {seed}\n"
@@ -83,12 +94,12 @@ if __name__ == "__main__":
     # load the model
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    if algorithm in ["cnn-simple", "cnn-simple-ft"]:
+    if algorithm in ["baseline", "finetune"]:
         agent = CnnSimpleAgent.load(
             args.load, envs, load_critic=False, map_location=device
         )
-    elif algorithm == "cnn-componet":
-        prevs_paths = [path_from_other_mode(args.load, i) for i in range(mode)]
+    elif algorithm == "componet":
+        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
         agent = CnnCompoNetAgent.load(
             args.load, envs, prevs_paths=prevs_paths, map_location=device
         )

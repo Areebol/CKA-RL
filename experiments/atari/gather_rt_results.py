@@ -11,7 +11,8 @@ def gather_return(env_id, idx):
         file_path = os.path.join(base_path, method, str(idx), 'returns.csv')
         if os.path.exists(file_path):
             df = pd.read_csv(file_path)
-            df.columns = [f'{method}{idx}-{col}' if col == 'episodic_return' else col for col in df.columns]
+            df.columns = [f'{method}-{idx}-{col}' if col == 'episodic_return' else col for col in df.columns]
+            df = df.drop_duplicates(subset=['global_step'])
             if combined_df.empty:
                 combined_df = df
             else:
@@ -20,10 +21,7 @@ def gather_return(env_id, idx):
             print(f"====> File not found for [method-{method}|mode-{idx}] : ", file_path)
             quit(1)
     
-    combined_df.to_csv(f'./data/{env_id}/combined_returns_{idx}.csv', index=False)
-
-# Example usage
-gather_return('Freeway', 1)
+    combined_df.to_csv(f'./data/{env_id}/task_{idx}.csv', index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Gather rewards for a specific environment.')
