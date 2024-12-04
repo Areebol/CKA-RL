@@ -29,6 +29,7 @@ from models import (
     ProgressiveNetAgent,
     PackNetAgent,
     CnnTvNetAgent, 
+    CnnTv2NetAgent, 
 )
 
 
@@ -235,6 +236,10 @@ if __name__ == "__main__":
     elif args.method_type == "tv_1":
         agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
                               map_location=device).to(device)
+    elif args.method_type == "tv_2":
+        agent = CnnTv2NetAgent(envs, prevs_paths=args.prev_units, 
+                              map_location=device).to(device)
+        
     else:
         print(f"Method type {args.method_type} is not valid.")
         quit(1)

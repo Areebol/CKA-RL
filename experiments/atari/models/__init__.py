@@ -4,3 +4,4 @@ from .cnn_componet import CnnCompoNetAgent
 from .progressive_net import ProgressiveNetAgent
 from .packnet import PackNetAgent
 from .cnn_tvnet import CnnTvNetAgent
+from .cnn_tvnet import CnnTv2NetAgent

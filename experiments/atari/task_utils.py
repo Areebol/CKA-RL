@@ -39,5 +39,7 @@ def get_method_type(args):
         return "ProgNet"
     elif args.method_type == "tv_1":
         return "TV1"
+    elif args.method_type == "tv_2":
+        return "TV2"
     else:
         return None
