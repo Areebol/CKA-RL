@@ -13,6 +13,8 @@ def parse_name_info(name):
         env = "ALE/Freeway-v5"
     mode = int(fields[1])
     algorithm = fields[2]
+    if len(fields) > 3:
+        algorithm += "_" + fields[3]
     # seed = int(fields[3])
     # return env, mode, algorithm, seed
     return env, mode, algorithm
@@ -36,6 +38,6 @@ def get_method_type(args):
     elif args.method_type == "prognet":
         return "ProgNet"
     elif args.method_type == "tv_1":
-        return "TV_1"
+        return "TV1"
     else:
         return None

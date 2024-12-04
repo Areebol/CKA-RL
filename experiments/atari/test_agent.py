@@ -15,6 +15,7 @@ from models import (
     CnnSimpleAgent,
     # DinoSimpleAgent,
     CnnCompoNetAgent,
+    CnnTvNetAgent, 
     ProgressiveNetAgent,
     PackNetAgent,
 )
@@ -63,7 +64,7 @@ def convert_algorithm(algorithm):
         "CompoNet": "componet",
         "PackNet": "packnet",
         "ProgNet": "prognet",
-        "TV_1": "tv_1",
+        "TV1": "tv_1",
     }
     return conversion_dict.get(algorithm, "unknown")
 
@@ -114,6 +115,12 @@ if __name__ == "__main__":
             ac = PackNetAgent.load(path, map_location=device)
             agent.critic = ac.critic
             agent.actor = ac.actor
+    elif algorithm == "tv_1":
+        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
+        print(prevs_paths)
+        agent = CnnTvNetAgent(
+           envs, prevs_paths=prevs_paths, map_location=device
+        )
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)

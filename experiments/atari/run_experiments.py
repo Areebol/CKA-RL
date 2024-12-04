@@ -9,7 +9,7 @@ method_choices = ["baseline",         # F1
                   "componet",         # CompoNet
                   "packnet",          # PackNet
                   "prognet",          # ProgNet
-                  "tv_1",             # TV_1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
+                  "tv_1",             # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   ]
 def parse_args():
     # fmt: off

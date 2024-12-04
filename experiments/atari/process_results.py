@@ -35,7 +35,7 @@ METHOD_NAMES = {
     "componet": "CompoNet",
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
-    # "cnn-tvnet": "TVNet",
+    "tv_1": "TV1",
 }
 
 METHOD_COLORS = {
@@ -44,12 +44,11 @@ METHOD_COLORS = {
     "componet": "tab:blue",
     "prognet": "tab:green",
     "packnet": "tab:purple",
-    # "cnn-tvnet": "tab:red",
+    "tv_1": "tab:red",
 }
 
 METHOD_ORDER = ["baseline", "componet", "finetune", "prognet", 
-                "packnet", ]
-                # "cnn-tvnet"]
+                "packnet", "tv_1"]
 
 
 def parse_args():
