@@ -123,6 +123,12 @@ if __name__ == "__main__":
         agent = CnnTvNetAgent.load(
            dirname = args.load, envs = envs, base_dir=path_from_other_mode(args.load, 0), map_location=device
         )
+    elif algorithm == "tv_2":
+        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
+        print(prevs_paths)
+        agent = CnnTv2NetAgent.load(
+           dirname = args.load, envs = envs, base_dir=path_from_other_mode(args.load, 0), map_location=device
+        ) 
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)

@@ -1,7 +1,7 @@
 ENV_NAME=Freeway
 TRAIN_MODE=7
 # for METHOD in PackNet CompoNet FN
-for METHOD in TV1
+for METHOD in TV2
 do
     for MODE in {0..7}
     do

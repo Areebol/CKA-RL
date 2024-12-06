@@ -46,10 +46,11 @@ METHOD_COLORS = {
     "prognet": "tab:green",
     "packnet": "tab:purple",
     "tv_1": "tab:red",
+    "tv_2": "tab:brown",
 }
 
 METHOD_ORDER = ["baseline", "componet", "finetune", "prognet", 
-                "packnet", "tv_1"]
+                "packnet", "tv_1", "tv_2"]
 
 
 def parse_args():
@@ -477,7 +478,7 @@ if __name__ == "__main__":
             if k in str(path):
                 cfg = SETTINGS[k]
                 break
-
+        print(task_id)
         data_task, success_score = compute_success(df, **cfg)
         data[task_id] = data_task
         scores[task_id] = success_score
