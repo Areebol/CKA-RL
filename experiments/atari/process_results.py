@@ -57,7 +57,7 @@ def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/Freeway",
-        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/Freeway"],
+        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/Freeway", "data/SpaceInvaders"],
         help="path to the directory where the CSV of each task is stored")
     parser.add_argument("--eval-results", type=str, default="data/eval_Freeway/eval_results.csv", #"data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")
