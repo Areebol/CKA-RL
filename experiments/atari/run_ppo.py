@@ -30,6 +30,7 @@ from models import (
     PackNetAgent,
     CnnTvNetAgent, 
     CnnTv2NetAgent, 
+    CnnFuse1Net
 )
 
 
@@ -239,6 +240,10 @@ if __name__ == "__main__":
     elif args.method_type == "tv_2":
         agent = CnnTv2NetAgent(envs, prevs_paths=args.prev_units, 
                               map_location=device).to(device)
+    elif args.method_type == "fuse_1":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        agent = CnnFuse1Net(envs, base_dir=base_dir, prevs_paths=args.prev_units[1:], 
+                              map_location=device).to(device)
         
     else:
         print(f"Method type {args.method_type} is not valid.")
@@ -247,7 +252,8 @@ if __name__ == "__main__":
     print(agent)
         
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
-
+    for i,j in agent.named_parameters():
+        print(i)
     # ALGO Logic: Storage setup
     obs = torch.zeros(
         (args.num_steps, args.num_envs) + envs.single_observation_space.shape

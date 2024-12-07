@@ -4,4 +4,6 @@
 # python run_experiments.py --method_type packnet   --first-mode 0 --last-mode 7 
 # python run_experiments.py --method_type prognet   --first-mode 0 --last-mode 7 
 # python run_experiments.py --method_type tv_1      --first-mode 0 --last-mode 7 
-python run_experiments.py --method_type tv_2      --first-mode 1 --last-mode 7
+# python run_experiments.py --method_type tv_2      --first-mode 1 --last-mode 7
+python run_experiments.py --method_type fuse_1      --first-mode 3 --last-mode 3 --debug True
+# python run_experiments.py --method_type fuse_1      --first-mode 0 --last-mode 7
