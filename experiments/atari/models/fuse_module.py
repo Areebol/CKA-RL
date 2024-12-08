@@ -68,13 +68,13 @@ class FuseLinear(nn.Module):
         self.num_weights = num_weights
         
         self.weight = Parameter(torch.empty((out_features, in_features), **factory_kwargs), requires_grad=False)
-        self.weight_eps = Parameter(torch.empty((out_features, in_features), **factory_kwargs))
+        self.weight_eps = Parameter(torch.empty((out_features, in_features), **factory_kwargs), requires_grad=True)
         if self.num_weights > 0:
             self.weights = Parameter(torch.stack([torch.empty((out_features, in_features)) for _ in range(num_weights)], dim=0), requires_grad=False)
         
         if bias:
             self.bias = Parameter(torch.empty(out_features, **factory_kwargs), requires_grad=False)
-            self.bias_eps = Parameter(torch.empty(out_features, **factory_kwargs))
+            self.bias_eps = Parameter(torch.empty(out_features, **factory_kwargs), requires_grad=True)
             if self.num_weights > 0:
                 self.biaes = Parameter(torch.stack([torch.empty(out_features) for _ in range(num_weights)], dim=0), requires_grad=False)
         else:
@@ -128,6 +128,17 @@ class FuseLinear(nn.Module):
     def extra_repr(self) -> str:
         return f'in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}'   
         
-    def set_base_and_vectors(self, base):
-        # TODO: set weight and vectors
-        ...
+    def set_base_and_vectors(self, base, vectors):
+        # Set weight and vectors
+        if base is not None:
+            print("Seting base")
+            assert('weight' in base and 'bias' in base)
+            self.weight.data.copy_(base['weight'])
+            self.bias.data.copy_(base['bias'])
+        if vectors is not None: 
+            print("Seting vectors")
+            assert('weight' in vectors and 'bias' in vectors)
+            assert base['weight'].shape == vectors['weight'].shape[1:], f"Shape of base {base['weight'].shape} weight and vectors weight {vectors['weight'].shape[1:]} must match"
+            assert base['bias'].shape == vectors['bias'].shape[1:], f"Shape of base {base['bias'].shape} bias and vectors bias {vectors['bias'].shape[1:]} must match"
+            self.weights.data.copy_(vectors['weight'])
+            self.biaes.data.copy_(vectors['bias'])

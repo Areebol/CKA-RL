@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.distributions.categorical import Categorical
-from cnn_encoder import CnnEncoder
+from .cnn_encoder import CnnEncoder
 import sys, os
 
 sys.path.append(os.path.dirname(__file__) + "/../../../")

@@ -249,11 +249,13 @@ if __name__ == "__main__":
         print(f"Method type {args.method_type} is not valid.")
         quit(1)
         
-    print(agent)
-        
-    optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
-    for i,j in agent.named_parameters():
-        print(i)
+    # print(agent)
+    trainable_params = [param for param in agent.parameters() if param.requires_grad]
+    
+    for name, param in agent.named_parameters():
+        if id(param) in [id(p) for p in trainable_params]:
+            print(f"Trainable Parameter: {name}")
+    optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
     # ALGO Logic: Storage setup
     obs = torch.zeros(
         (args.num_steps, args.num_envs) + envs.single_observation_space.shape
@@ -301,6 +303,12 @@ if __name__ == "__main__":
                 elif args.method_type == "componet":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
+                    )
+                elif args.method_type == "fuse_1":
+                    action, logprob, _, value = agent.get_action_and_value(
+                        next_obs / 255.0, 
+                        log_writter=writer, 
+                        global_step=global_step
                     )
                 else:
                     action, logprob, _, value = agent.get_action_and_value(
