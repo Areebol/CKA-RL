@@ -5,6 +5,6 @@
 # python run_experiments.py --method_type prognet   --first-mode 0 --last-mode 7 
 # python run_experiments.py --method_type tv_1      --first-mode 0 --last-mode 7 
 # python run_experiments.py --method_type tv_2      --first-mode 1 --last-mode 7
-# python run_experiments.py --method_type fuse_1      --first-mode 0 --last-mode 7
-python run_experiments.py --method_type fuse_2      --first-mode 0 --last-mode 7 --seed 41
+# python run_experiments.py --method_type fuse_1    --first-mode 0 --last-mode 7
+python run_experiments.py --method_type fuse_2      --first-mode 0 --last-mode 7
 # python run_experiments.py --method_type fuse_1      --first-mode 0 --last-mode 7

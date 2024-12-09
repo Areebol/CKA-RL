@@ -12,7 +12,8 @@ method_choices = ["baseline",         # F1
                   "tv_1",             # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   "tv_2",             # TV1 Task-Vector-1: Do Task-Vector on Encoder only
                   "fuse_1",           # Fuse 1: Do fuse to Actor only
-                  "fuse_2",           # Fuse 1: Do fuse to Actor only
+                  "fuse_2",           # Fuse 2: Do fuse to Actor only + Fix alpha
+                  "fuse_3",           # Fuse 1: Do fuse to Actor only + `add Delta theta_0 = 0` + `large alpha's learning rate`
                   ]
 def parse_args():
     # fmt: off
@@ -68,7 +69,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.method_type in ["componet", "prognet", "tv_1", "tv_2", "fuse_1"]:
+        if args.method_type in ["componet", "prognet", "tv_1", "tv_2", "fuse_1", "fuse_2", "fuse_3"]:
             params += " --prev-units"
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"

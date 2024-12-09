@@ -6,3 +6,4 @@ from .packnet import PackNetAgent
 from .cnn_tvnet import CnnTvNetAgent
 from .cnn_tvnet import CnnTv2NetAgent
 from .cnn_fusenet import CnnFuse1Net
+from .cnn_fusenet3 import CnnFuse3Net

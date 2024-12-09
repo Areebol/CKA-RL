@@ -1,11 +1,112 @@
 import os
+import math
 import torch
-import torch.nn as nn
 import numpy as np
-from torch.distributions.categorical import Categorical
+import torch.nn as nn
+from torch import Tensor
+import torch.nn.functional as F
 from .cnn_encoder import CnnEncoder
-import sys, os
-from .fuse_module import FuseLinear
+from torch.nn import Parameter, ParameterList, init
+from torch.distributions.categorical import Categorical
+
+class FuseLinear(nn.Module):
+    r"""Applies a linear transformation to the 
+    """
+    __constants__ = ['in_features', 'out_features']
+    in_features: int
+    out_features: int
+    weight: Tensor
+
+    def __init__(self, in_features: int, 
+                 out_features: int, 
+                 bias: bool = True, 
+                 num_weights: int = -1, # -1 表示刚开始训练， 0表示没有weight可用， n表示有n个weight可用 (n>0)
+                 alpha: nn.Parameter = None,
+                 device=None, dtype=None) -> None:
+        factory_kwargs = {'device': device, 'dtype': dtype}
+        super().__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.alpha = alpha
+        self._bias = bias
+        self.num_weights = num_weights
+        
+        self.weight = Parameter(torch.empty((out_features, in_features), **factory_kwargs), requires_grad=False)
+        self.weight_eps = Parameter(torch.empty((out_features, in_features), **factory_kwargs), requires_grad=True)
+        if self.num_weights > 0:
+            self.weights = Parameter(torch.stack([torch.empty((out_features, in_features)) for _ in range(num_weights)], dim=0), requires_grad=False)
+        
+        if bias:
+            self.bias = Parameter(torch.empty(out_features, **factory_kwargs), requires_grad=False)
+            self.bias_eps = Parameter(torch.empty(out_features, **factory_kwargs), requires_grad=True)
+            if self.num_weights > 0:
+                self.biaes = Parameter(torch.stack([torch.empty(out_features) for _ in range(num_weights)], dim=0), requires_grad=False)
+        else:
+            self.register_parameter('bias', None)
+            self.register_parameter('bias_eps', None)
+            if self.num_weights > 0:
+                self.register_parameter('biases', None)
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
+        # https://github.com/pytorch/pytorch/issues/57109
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+            init.uniform_(self.bias, -bound, bound)
+
+    def forward(self, input: Tensor) -> Tensor:
+        if self.num_weights == -1:
+            """eps"""
+            return self._forward_with_eps_only(input)
+        elif self.num_weights == 0:
+            """base + eps"""
+            return self._forward_with_fuse_eps(input)
+        else:
+            """base + weights + eps"""
+            return self._forward_with_fuse_eps_vectors(input)
+    
+    def _forward_with_fuse_eps_vectors(self, input: Tensor) -> Tensor:
+        alphas_normalized = F.softmax(self.alpha, dim=0)
+        weight = self.weight + (alphas_normalized.view(-1, 1, 1) * self.weights).sum(dim = 0) + self.weight_eps
+        if self._bias:
+            bias = self.bias + (alphas_normalized.view(-1,1) * self.biaes).sum(dim=0) + self.bias_eps
+        else:
+            bias = None
+        return F.linear(input, weight, bias)
+    
+    def _forward_with_fuse_eps(self, input: Tensor) -> Tensor:
+        weight = self.weight + self.weight_eps
+        if self._bias:
+            bias = self.bias + self.bias_eps
+        else:
+            bias = None
+        return F.linear(input, weight, bias)
+    
+    def _forward_with_eps_only(self, input: Tensor) -> Tensor:
+        return F.linear(input, self.weight_eps, self.bias_eps)
+
+    def extra_repr(self) -> str:
+        return f'in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None}'   
+        
+    def set_base_and_vectors(self, base, vectors):
+        # Set weight and vectors
+        if base is not None:
+            print("Seting base")
+            assert('weight' in base and 'bias' in base)
+            self.weight.data.copy_(base['weight'])
+            self.bias.data.copy_(base['bias'])
+        if vectors is not None: 
+            print("Seting vectors")
+            assert('weight' in vectors and 'bias' in vectors)
+            assert base['weight'].shape == vectors['weight'].shape[1:], f"Shape of base {base['weight'].shape} weight and vectors weight {vectors['weight'].shape[1:]} must match"
+            assert base['bias'].shape == vectors['bias'].shape[1:], f"Shape of base {base['bias'].shape} bias and vectors bias {vectors['bias'].shape[1:]} must match"
+            self.weights.data.copy_(vectors['weight'])
+            self.biaes.data.copy_(vectors['bias'])
+
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
@@ -57,8 +158,6 @@ class CnnFuse1Net(nn.Module):
         base, vectors, self.num_weights = load_actor_base_and_vectors(base_dir, prevs_paths)
         
         if self.num_weights > 0:
-            self.alpha = nn.Parameter(torch.randn(self.num_weights), requires_grad=True)
-            print("Alpha's shape:", self.alpha.shape)
             if learn_alpha:
                 self.alpha = nn.Parameter(torch.randn(self.num_weights), requires_grad=True)
             else:

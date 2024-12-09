@@ -30,7 +30,8 @@ from models import (
     PackNetAgent,
     CnnTvNetAgent, 
     CnnTv2NetAgent, 
-    CnnFuse1Net
+    CnnFuse1Net,
+    CnnFuse3Net,
 )
 
 
@@ -115,6 +116,9 @@ class Args:
     """the mini-batch size (computed in runtime)"""
     num_iterations: int = 0
     """the number of iterations (computed in runtime)"""
+    
+    fuse_lr_scale: float = 10.0
+    """放大alpha的学习率倍数"""
 
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
@@ -150,9 +154,10 @@ if __name__ == "__main__":
     env_name = args.env_id.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
     run_name = f"{env_name}_{m}_{get_method_type(args)}"
     logs = {"global_step": [], "episodic_return": []}
+    _fuse = "fuse" in args.method_type and args.mode > 0
     
     print("Run's name:", run_name)
-    if args.track:
+    if False:
         import wandb
         wandb.init(
             project=args.wandb_project_name,
@@ -242,8 +247,10 @@ if __name__ == "__main__":
                               map_location=device).to(device)
     elif args.method_type == "fuse_1":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse1Net(envs, base_dir=base_dir, prevs_paths=args.prev_units[1:], 
-                              map_location=device).to(device)
+        agent = CnnFuse1Net(envs, 
+                            base_dir=base_dir, 
+                            prevs_paths=args.prev_units[1:], 
+                            map_location=device).to(device)
     elif args.method_type == "fuse_2":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         agent = CnnFuse1Net(envs, 
@@ -251,18 +258,30 @@ if __name__ == "__main__":
                             prevs_paths=args.prev_units[1:], 
                             map_location=device,
                             learn_alpha=False).to(device)
+    elif args.method_type == "fuse_3":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        agent = CnnFuse3Net(envs, 
+                            base_dir=base_dir, 
+                            prevs_paths=args.prev_units[1:], 
+                            map_location=device).to(device)  
         
     else:
         print(f"Method type {args.method_type} is not valid.")
         quit(1)
         
     # print(agent)
-    trainable_params = [param for param in agent.parameters() if param.requires_grad]
+    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" not in name]
     
-    for name, param in agent.named_parameters():
-        if id(param) in [id(p) for p in trainable_params]:
-            print(f"Trainable Parameter: {name}")
+    # for name, param in agent.named_parameters():
+    #     if id(param) in [id(p) for p in trainable_params]:
+    #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
+    if _fuse:
+        print("Train alpha and alpha_scale")
+        # 学习率放大x倍
+        optimizer.add_param_group({"params": [agent.alpha,agent.alpha_scale], "lr": args.learning_rate*args.fuse_lr_scale, "eps": 1e-5})
+        # optimizer.add_param_group({"params": agent.alpha_scale, "lr": args.learning_rate*args.fuse_lr_scale, "eps": 1e-5})
+
     # ALGO Logic: Storage setup
     obs = torch.zeros(
         (args.num_steps, args.num_envs) + envs.single_observation_space.shape
@@ -311,7 +330,7 @@ if __name__ == "__main__":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
                     )
-                elif args.method_type in ["fuse_1","fuse_2"]:
+                elif "fuse" in args.method_type:
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, 
                         log_writter=writer, 
@@ -471,6 +490,16 @@ if __name__ == "__main__":
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
+        if _fuse:
+            # 记录alpha的学习率
+            writer.add_scalar(
+                "charts/fuse_learning_rate", optimizer.param_groups[1]["lr"], global_step
+            )
+        # 观察模型参数和梯度变化情况
+        for name, param in agent.named_parameters():
+            if param.grad is not None:
+                writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
+            writer.add_histogram(tag=name+'_data', values=param.data, global_step=global_step)
 
     envs.close()
     writer.close()
