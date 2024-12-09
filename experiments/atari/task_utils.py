@@ -43,5 +43,7 @@ def get_method_type(args):
         return "TV2"
     elif args.method_type == "fuse_1":
         return "Fuse1"
+    elif args.method_type == "fuse_2":
+        return "Fuse2"
     else:
         return None

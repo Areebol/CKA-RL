@@ -49,20 +49,18 @@ def load_actor_base_and_vectors(base_dir, prevs_paths):
         vectors = [None,None]
     return base, vectors, num_weights
 
-class CnnFuse1Net(nn.Module):
-    def __init__(self, envs, base_dir, prevs_paths=[], learn_alpha = True, map_location=None):
+class CnnFuse3Net(nn.Module):
+    def __init__(self, envs, base_dir, prevs_paths=[], map_location=None):
         super().__init__()
         self.hidden_dim = 512
         self.envs = envs
+        self.i = 0
         base, vectors, self.num_weights = load_actor_base_and_vectors(base_dir, prevs_paths)
         
         if self.num_weights > 0:
             self.alpha = nn.Parameter(torch.randn(self.num_weights), requires_grad=True)
             print("Alpha's shape:", self.alpha.shape)
-            if learn_alpha:
-                self.alpha = nn.Parameter(torch.randn(self.num_weights), requires_grad=True)
-            else:
-                self.alpha = nn.Parameter(torch.ones(self.num_weights), requires_grad=False)
+            self.alpha = nn.Parameter(torch.randn(self.num_weights), requires_grad=True)
             print("Alpha's shape:", self.alpha.shape)
         else:
             self.alpha = None
@@ -106,7 +104,7 @@ class CnnFuse1Net(nn.Module):
         torch.save(self.critic, f"{dirname}/critic.pt")
 
     def load(dirname, envs, load_critic=True, reset_actor=False, map_location=None):
-        model = CnnFuse1Net(envs)
+        model = CnnFuse3Net(envs)
         model.network = torch.load(f"{dirname}/encoder.pt", map_location=map_location)
         if load_critic:
             model.critic = torch.load(f"{dirname}/critic.pt", map_location=map_location)

@@ -12,6 +12,7 @@ method_choices = ["baseline",         # F1
                   "tv_1",             # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   "tv_2",             # TV1 Task-Vector-1: Do Task-Vector on Encoder only
                   "fuse_1",           # Fuse 1: Do fuse to Actor only
+                  "fuse_2",           # Fuse 1: Do fuse to Actor only
                   ]
 def parse_args():
     # fmt: off

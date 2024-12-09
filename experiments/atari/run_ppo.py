@@ -244,6 +244,13 @@ if __name__ == "__main__":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         agent = CnnFuse1Net(envs, base_dir=base_dir, prevs_paths=args.prev_units[1:], 
                               map_location=device).to(device)
+    elif args.method_type == "fuse_2":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        agent = CnnFuse1Net(envs, 
+                            base_dir=base_dir, 
+                            prevs_paths=args.prev_units[1:], 
+                            map_location=device,
+                            learn_alpha=False).to(device)
         
     else:
         print(f"Method type {args.method_type} is not valid.")
@@ -304,7 +311,7 @@ if __name__ == "__main__":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
                     )
-                elif args.method_type == "fuse_1":
+                elif args.method_type in ["fuse_1","fuse_2"]:
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, 
                         log_writter=writer, 

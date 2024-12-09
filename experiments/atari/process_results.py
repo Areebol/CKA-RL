@@ -37,6 +37,8 @@ METHOD_NAMES = {
     "packnet": "PackNet",
     "tv_1": "TV1",
     "tv_2": "TV2",
+    "fuse_1": "Fuse1",
+    "fuse_2": "Fuse2",
 }
 
 METHOD_COLORS = {
@@ -47,10 +49,14 @@ METHOD_COLORS = {
     "packnet": "tab:purple",
     "tv_1": "tab:red",
     "tv_2": "tab:brown",
+    "fuse_1": "tab:pink",
+    "fuse_2": "tab:olive",
 }
 
-METHOD_ORDER = ["baseline", "componet", "finetune", "prognet", 
-                "packnet", "tv_1", "tv_2"]
+METHOD_ORDER = ["baseline", "componet", 
+                "finetune", "prognet", 
+                "packnet", "tv_1", "tv_2", 
+                "fuse_1", "fuse_2"]
 
 
 def parse_args():
