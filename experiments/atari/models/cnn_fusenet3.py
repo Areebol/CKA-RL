@@ -56,10 +56,13 @@ class FuseLinear(nn.Module):
         # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
         # https://github.com/pytorch/pytorch/issues/57109
         init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        init.kaiming_uniform_(self.weight_eps, a=math.sqrt(5))
+        
         if self.bias is not None:
             fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
             bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
             init.uniform_(self.bias, -bound, bound)
+            init.uniform_(self.bias_eps, -bound, bound)
 
     def forward(self, input: Tensor) -> Tensor:
         if self.num_weights == 0:
@@ -109,13 +112,15 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.constant_(layer.bias, bias_const)
     
     if hasattr(layer, 'weight_eps'):
+        torch.nn.init.zeros_(layer.weight)
         torch.nn.init.orthogonal_(layer.weight_eps, std)
     if hasattr(layer, 'bias_eps'):
+        torch.nn.init.zeros_(layer.bias)
         torch.nn.init.constant_(layer.bias_eps, bias_const)
     if hasattr(layer, 'weights'):
-        torch.nn.init.orthogonal_(layer.weights, std)
+        torch.nn.init.zeros_(layer.weights)
     if hasattr(layer, 'biaes'):
-        torch.nn.init.constant_(layer.biaes, bias_const)
+        torch.nn.init.zeros_(layer.biaes)
     return layer
 
 def load_actor_base_and_vectors(base_dir, prevs_paths):
@@ -166,7 +171,7 @@ class CnnFuse3Net(nn.Module):
                                   alpha=self.alpha, alpha_scale=self.alpha_scale)),
             nn.ReLU(),
             layer_init(FuseLinear(512, envs.single_action_space.n, num_weights=self.num_weights, 
-                                  alpha=self.alpha, alpha_scale=self.alpha_scale)),
+                                  alpha=self.alpha, alpha_scale=self.alpha_scale),std=0.01),
         )
         
         self.actor[0].set_base_and_vectors(base[0], vectors[0])
