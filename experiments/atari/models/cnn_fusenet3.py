@@ -151,7 +151,9 @@ def load_actor_base_and_vectors(base_dir, prevs_paths):
     return base, vectors, num_weights
 
 class CnnFuse3Net(nn.Module):
-    def __init__(self, envs, base_dir, prevs_paths=[], map_location=None):
+    def __init__(self, envs, base_dir, prevs_paths=[], 
+                 fix_alpha: bool = False,
+                 map_location=None):
         super().__init__()
         self.hidden_dim = 512
         self.envs = envs
@@ -159,9 +161,14 @@ class CnnFuse3Net(nn.Module):
         base, vectors, self.num_weights = load_actor_base_and_vectors(base_dir, prevs_paths)
         
         if self.num_weights > 0:
-            self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
+            if fix_alpha:
+                self.alpha = nn.Parameter(torch.zeros(self.num_weights), requires_grad=False)
+                self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=False)
+                print("Fix alpha to all 0")
+            else:
+                self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
+                self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
             print("Alpha's shape:", self.alpha.shape)
-            self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
         else:
             self.alpha = None
             self.alpha_scale = None

@@ -264,7 +264,13 @@ if __name__ == "__main__":
                             base_dir=base_dir, 
                             prevs_paths=args.prev_units[1:], 
                             map_location=device).to(device)  
-        
+    elif args.method_type == "fuse_4":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        agent = CnnFuse3Net(envs, 
+                            base_dir=base_dir, 
+                            prevs_paths=args.prev_units[1:], 
+                            map_location=device,
+                            fix_alpha=True).to(device)  
     else:
         print(f"Method type {args.method_type} is not valid.")
         quit(1)
@@ -276,7 +282,7 @@ if __name__ == "__main__":
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
-    if _fuse:
+    if _fuse and args.method_type == "fuse_3":
         print("Train alpha and alpha_scale")
         # 学习率放大x倍
         optimizer.add_param_group({"params": [agent.alpha,agent.alpha_scale], "lr": args.learning_rate*args.fuse_lr_scale, "eps": 1e-5})
@@ -490,7 +496,7 @@ if __name__ == "__main__":
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
-        if _fuse:
+        if _fuse and args.method_type == 'fuse_3':
             # 记录alpha的学习率
             writer.add_scalar(
                 "charts/fuse_learning_rate", optimizer.param_groups[1]["lr"], global_step
