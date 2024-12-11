@@ -117,7 +117,7 @@ class Args:
     num_iterations: int = 0
     """the number of iterations (computed in runtime)"""
     
-    fuse_lr_scale: float = 10.0
+    fuse_lr_scale: float = 100.0
     """放大alpha的学习率倍数"""
 
 
@@ -147,6 +147,9 @@ def make_env(env_id, idx, capture_video, run_name, mode=None):
     
 if __name__ == "__main__":
     args = tyro.cli(Args)
+    if  args.method_type == "fuse_5" and args.mode > 1:
+        print("scale timestpes")
+        args.total_timesteps = int(args.total_timesteps * 1.1)    
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
@@ -271,22 +274,27 @@ if __name__ == "__main__":
                             prevs_paths=args.prev_units[1:], 
                             map_location=device,
                             fix_alpha=True).to(device)  
+    elif args.method_type == "fuse_5":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        agent = CnnFuse3Net(envs, 
+                            base_dir=base_dir, 
+                            prevs_paths=args.prev_units[1:], 
+                            map_location=device).to(device)  
     else:
         print(f"Method type {args.method_type} is not valid.")
         quit(1)
         
     # print(agent)
-    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" not in name]
+    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad]
     
     # for name, param in agent.named_parameters():
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
-    if _fuse and args.method_type == "fuse_3":
-        print("Train alpha and alpha_scale")
-        # 学习率放大x倍
-        optimizer.add_param_group({"params": [agent.alpha,agent.alpha_scale], "lr": args.learning_rate*args.fuse_lr_scale, "eps": 1e-5})
-        # optimizer.add_param_group({"params": agent.alpha_scale, "lr": args.learning_rate*args.fuse_lr_scale, "eps": 1e-5})
+    if _fuse and args.method_type == "fuse_5" and args.mode > 1:
+        print("Train alpha + alpha scale in first stages")
+        agent.configure(mode="train_alpha")
+        alpha_optimizer = optim.Adam([agent.alpha,agent.alpha_scale], lr=args.learning_rate * args.fuse_lr_scale, eps=1e-5)
 
     # ALGO Logic: Storage setup
     obs = torch.zeros(
@@ -465,14 +473,25 @@ if __name__ == "__main__":
                 entropy_loss = entropy.mean()
                 loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
 
-                optimizer.zero_grad()
-                loss.backward()
-                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                if args.method_type == "packnet":
-                    if global_step >= packnet_retrain_start:
-                        agent.start_retraining()  # can be called multiple times, only the first counts
-                    agent.before_update()
-                optimizer.step()
+                if args.method_type == "fuse_5" and global_step < 0.1 * args.total_timesteps and args.mode > 1:
+                    alpha_optimizer.zero_grad()
+                    loss.backward()
+                    nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                    alpha_optimizer.step()
+                else:
+                    optimizer.zero_grad()
+                    loss.backward()
+                    nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                    if args.method_type == "packnet":
+                        if global_step >= packnet_retrain_start:
+                            agent.start_retraining()  # can be called multiple times, only the first counts
+                        agent.before_update()
+                    optimizer.step()
+                
+                if args.method_type == "fuse_5" and global_step > 0.1 * args.total_timesteps and args.mode > 1:
+                    """训练除alpha的其他参数"""
+                    # print("train theta")
+                    agent.configure(mode="train_theta")
 
             if args.target_kl is not None and approx_kl > args.target_kl:
                 break

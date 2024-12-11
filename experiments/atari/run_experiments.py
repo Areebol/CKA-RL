@@ -15,6 +15,7 @@ method_choices = ["baseline",         # F1
                   "fuse_2",           # Fuse 2: Do fuse to Actor only + `Fix alpha`
                   "fuse_3",           # Fuse 3: Do fuse to Actor only + `add Delta theta_0 = 0` + `large alpha's learning rate`
                   "fuse_4",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
+                  "fuse_5",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
                   ]
 def parse_args():
     # fmt: off

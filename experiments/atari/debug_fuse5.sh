@@ -1,0 +1,1 @@
+python run_experiments.py --method_type fuse_5      --first-mode 2 --last-mode 7

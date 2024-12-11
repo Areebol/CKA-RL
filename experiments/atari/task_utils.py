@@ -49,5 +49,7 @@ def get_method_type(args):
         return "Fuse3"
     elif args.method_type == "fuse_4":
         return "Fuse4"
+    elif args.method_type == "fuse_5":
+        return "Fuse5"
     else:
         return None

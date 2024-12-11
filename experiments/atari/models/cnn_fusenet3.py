@@ -51,6 +51,12 @@ class FuseLinear(nn.Module):
                 self.register_parameter('biases', None)
         self.reset_parameters()
 
+    def configure(self):
+        if self.num_weights == 0:
+            self.weight_eps.requires_grad = True
+            if self._bias:
+                self.bias_eps.requires_grad = True
+
     def reset_parameters(self) -> None:
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
         # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
@@ -221,3 +227,25 @@ class CnnFuse3Net(nn.Module):
         if not reset_actor:
             model.actor = torch.load(f"{dirname}/actor.pt", map_location=map_location)            
         return model
+
+    def configure(self, mode=["train_alpha","train_theta"]):
+        if mode == "train_alpha":
+            print("alpha enable grad")
+            for name, param in self.named_parameters():
+                if "alpha" in name:
+                    print(name)
+                    param.requires_grad = True
+                else:
+                    param.requires_grad = False
+        elif mode == "train_theta":
+            # print("theta enable grad, alpha stop grad")
+            for name, param in self.named_parameters():
+                if "alpha" in name:
+                    param.requires_grad = False
+                elif "actor" in name:
+                    if "eps" in name:
+                        param.requires_grad = True
+                    else:
+                        param.requires_grad = False
+                else:
+                    param.requires_grad = True
