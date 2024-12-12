@@ -9,9 +9,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import tyro
+import sys
 from typing import Literal, Tuple, Optional
 import pathlib
-from task_utils import get_method_type
+from loguru import logger
+from tqdm import tqdm
+# from task_utils import get_method_type
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -30,8 +33,7 @@ from models import (
     PackNetAgent,
     CnnTvNetAgent, 
     CnnTv2NetAgent, 
-    CnnFuse1Net,
-    CnnFuse3Net,
+    FuseNetAgent,
 )
 
 
@@ -118,8 +120,10 @@ class Args:
     """the number of iterations (computed in runtime)"""
     
     fuse_lr_scale: float = 100.0
-    """放大alpha的学习率倍数"""
-
+    """scale the learning rate of the alpha parameter"""
+    
+    debug: bool = False
+    """log level"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -147,31 +151,30 @@ def make_env(env_id, idx, capture_video, run_name, mode=None):
     
 if __name__ == "__main__":
     args = tyro.cli(Args)
-    if  args.method_type == "fuse_5" and args.mode > 1:
-        print("scale timestpes")
-        args.total_timesteps = int(args.total_timesteps * 1.1)    
+    if args.debug is False:
+        logger.remove() 
+        handler_id = logger.add(sys.stderr, level="INFO") 
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
     m = f"{args.mode}" if args.mode is not None else ""
     env_name = args.env_id.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
-    run_name = f"{env_name}_{m}_{get_method_type(args)}"
-    logs = {"global_step": [], "episodic_return": []}
-    _fuse = "fuse" in args.method_type and args.mode > 0
+    run_name = f"{env_name}_{m}_{args.method_type}_{args.seed}"
+    logs = {"global_step": [0], "episodic_return": [0]}
     
-    print("Run's name:", run_name)
-    if False:
-        import wandb
-        wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
-            sync_tensorboard=True,
-            config=vars(args),
-            name=run_name,
-            monitor_gym=True,
-            save_code=True,
-            mode="offline",
-        )
+    logger.info(f"Run's name: {run_name}")
+    # if False:
+    #     import wandb
+    #     wandb.init(
+    #         project=args.wandb_project_name,
+    #         entity=args.wandb_entity,
+    #         sync_tensorboard=True,
+    #         config=vars(args),
+    #         name=run_name,
+    #         monitor_gym=True,
+    #         save_code=True,
+    #         mode="offline",
+    #     )
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
         "hyperparameters",
@@ -199,7 +202,7 @@ if __name__ == "__main__":
         envs.single_action_space, gym.spaces.Discrete
     ), "only discrete action space is supported"
 
-    print(f"*** Method: {args.method_type} ***")
+    logger.info(f"Method: {args.method_type}")
     if args.method_type == "baseline":
         agent = CnnSimpleAgent(envs).to(device)
     elif args.method_type == "finetune":
@@ -242,46 +245,22 @@ if __name__ == "__main__":
                 restart_actor_critic=True,
                 freeze_bias=True,
             ).to(device)
-    elif args.method_type == "tv_1":
+    elif args.method_type == "tv1":
         agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
                               map_location=device).to(device)
-    elif args.method_type == "tv_2":
+    elif args.method_type == "tv2":
         agent = CnnTv2NetAgent(envs, prevs_paths=args.prev_units, 
                               map_location=device).to(device)
-    elif args.method_type == "fuse_1":
+    elif args.method_type == "FuseNet":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse1Net(envs, 
-                            base_dir=base_dir, 
-                            prevs_paths=args.prev_units[1:], 
-                            map_location=device).to(device)
-    elif args.method_type == "fuse_2":
-        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse1Net(envs, 
-                            base_dir=base_dir, 
-                            prevs_paths=args.prev_units[1:], 
-                            map_location=device,
-                            learn_alpha=False).to(device)
-    elif args.method_type == "fuse_3":
-        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse3Net(envs, 
-                            base_dir=base_dir, 
-                            prevs_paths=args.prev_units[1:], 
-                            map_location=device).to(device)  
-    elif args.method_type == "fuse_4":
-        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse3Net(envs, 
-                            base_dir=base_dir, 
-                            prevs_paths=args.prev_units[1:], 
-                            map_location=device,
-                            fix_alpha=True).to(device)  
-    elif args.method_type == "fuse_5":
-        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        agent = CnnFuse3Net(envs, 
-                            base_dir=base_dir, 
-                            prevs_paths=args.prev_units[1:], 
-                            map_location=device).to(device)  
+        encoder_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
+        logger.info("base_dir:", base_dir)  
+        logger.info("encoder_dir:", encoder_dir)  
+        agent = FuseNetAgent(envs, base_dir=base_dir, 
+                             encoder_dir=encoder_dir, prevs_paths=args.prev_units,
+                              map_location=device).to(device)
     else:
-        print(f"Method type {args.method_type} is not valid.")
+        logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
         
     # print(agent)
@@ -291,10 +270,6 @@ if __name__ == "__main__":
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
-    if _fuse and args.method_type == "fuse_5" and args.mode > 1:
-        print("Train alpha + alpha scale in first stages")
-        agent.configure(mode="train_alpha")
-        alpha_optimizer = optim.Adam([agent.alpha,agent.alpha_scale], lr=args.learning_rate * args.fuse_lr_scale, eps=1e-5)
 
     # ALGO Logic: Storage setup
     obs = torch.zeros(
@@ -315,7 +290,8 @@ if __name__ == "__main__":
     next_obs = torch.Tensor(next_obs).to(device)
     next_done = torch.zeros(args.num_envs).to(device)
 
-    for iteration in range(1, args.num_iterations + 1):
+    loop = tqdm(range(1, args.num_iterations + 1))
+    for iteration in loop:
         # Annealing the rate if instructed to do so.
         if args.anneal_lr:
             frac = 1.0 - (iteration - 1.0) / args.num_iterations
@@ -372,7 +348,7 @@ if __name__ == "__main__":
             if "final_info" in infos:
                 for info in infos["final_info"]:
                     if info and "episode" in info:
-                        print(
+                        logger.debug(
                             f"global_step={global_step}, episodic_return={info['episode']['r']}"
                         )
                         logs["global_step"].append(global_step)
@@ -473,26 +449,15 @@ if __name__ == "__main__":
                 entropy_loss = entropy.mean()
                 loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
 
-                if args.method_type == "fuse_5" and global_step < 0.1 * args.total_timesteps and args.mode > 1:
-                    alpha_optimizer.zero_grad()
-                    loss.backward()
-                    nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                    alpha_optimizer.step()
-                else:
-                    optimizer.zero_grad()
-                    loss.backward()
-                    nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                    if args.method_type == "packnet":
-                        if global_step >= packnet_retrain_start:
-                            agent.start_retraining()  # can be called multiple times, only the first counts
-                        agent.before_update()
-                    optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
+                if args.method_type == "packnet":
+                    if global_step >= packnet_retrain_start:
+                        agent.start_retraining()  # can be called multiple times, only the first counts
+                    agent.before_update()
+                optimizer.step()
                 
-                if args.method_type == "fuse_5" and global_step > 0.1 * args.total_timesteps and args.mode > 1:
-                    """训练除alpha的其他参数"""
-                    # print("train theta")
-                    agent.configure(mode="train_theta")
-
             if args.target_kl is not None and approx_kl > args.target_kl:
                 break
 
@@ -511,16 +476,15 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        print("SPS:", int(global_step / (time.time() - start_time)))
+        logger.debug(f"SPS:{int(global_step / (time.time() - start_time))}")
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
-        if _fuse and args.method_type == 'fuse_3':
-            # 记录alpha的学习率
-            writer.add_scalar(
-                "charts/fuse_learning_rate", optimizer.param_groups[1]["lr"], global_step
-            )
-        # 观察模型参数和梯度变化情况
+        
+        # show SLS + return
+        loop.set_postfix(SPS=int(global_step / (time.time() - start_time)),R=logs["episodic_return"][-1])
+        
+        # log model's weight and grad
         for name, param in agent.named_parameters():
             if param.grad is not None:
                 writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
@@ -534,8 +498,8 @@ if __name__ == "__main__":
     log_dir = f"data/{env_name}/{args.method_type}/{args.mode}" 
     os.makedirs(log_dir, exist_ok=True)
     df.to_csv(f"{log_dir}/returns.csv", index=False)
-    print("saved log return to csv, return length:", len(logs["episodic_return"]))
+    logger.info("saved log return to csv, return length:" + len(logs["episodic_return"]))
     
     if args.save_dir is not None:
-        print(f"Saving trained agent in `{args.save_dir}` with name `{run_name}`")
+        logger.info(f"Saving trained agent in `{args.save_dir}` with name `{run_name}`")
         agent.save(dirname=f"{args.save_dir}/{run_name}")

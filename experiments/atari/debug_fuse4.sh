@@ -1,1 +1,0 @@
-python run_experiments.py --method_type fuse_4      --first-mode 1 --last-mode 7 --debug True

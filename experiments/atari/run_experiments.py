@@ -16,6 +16,7 @@ method_choices = ["baseline",         # F1
                   "fuse_3",           # Fuse 3: Do fuse to Actor only + `add Delta theta_0 = 0` + `large alpha's learning rate`
                   "fuse_4",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
                   "fuse_5",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
+                  "FuseNet",          # FuseNet
                   ]
 def parse_args():
     # fmt: off
@@ -46,7 +47,7 @@ seed = random.randint(0, 1e6) if args.seed is None else args.seed
 
 env_name = args.env.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
 run_name = (
-    lambda task_id: f"{env_name}_{task_id}_{get_method_type(args)}" # e.g. Freeway_1_FN、Freeway_2_TV_1
+    lambda task_id: f"{env_name}_{task_id}_{args.method_type}_{args.seed}" # e.g. Freeway_1_FN、Freeway_2_TV_1
 )
 
 first_idx = modes.index(first_mode)
@@ -61,7 +62,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     # debug
     params += (" --track" if not debug else " --no-track")
     if debug:
-        params += f" --total-timesteps=10000"
+        params += f" --total-timesteps=3000"
 
     # method specific CLI arguments
     if args.method_type == "componet":
@@ -71,7 +72,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.method_type in ["componet", "prognet", "tv_1", "tv_2"] or 'fuse' in args.method_type:
+        if args.method_type in ["componet", "prognet", "tv_1", "tv_2", "FuseNet"] or 'fuse' in args.method_type:
             params += " --prev-units"
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
