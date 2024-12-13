@@ -1,10 +1,9 @@
-# python run_experiments.py --method_type baseline  --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type finetune  --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type componet  --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type packnet   --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type prognet   --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type tv_1      --first-mode 0 --last-mode 7 
-# python run_experiments.py --method_type tv_2      --first-mode 1 --last-mode 7
-# python run_experiments.py --method_type fuse_1    --first-mode 0 --last-mode 7
-python run_experiments.py --method_type fuse_2      --first-mode 0 --last-mode 7
-# python run_experiments.py --method_type fuse_1      --first-mode 0 --last-mode 7
+SEED=0
+TRAIN_MODES="--first-mode 0 --last-mode 7"
+python run_experiments.py --method_type Baseline  $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type Finetune  $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type CompoNet  $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type PackNet   $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type ProgNet   $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type TvNet     $TRAIN_MODES --seed $SEED --debug True
+python run_experiments.py --method_type FuseNet   $TRAIN_MODES --seed $SEED --debug True

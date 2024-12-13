@@ -139,7 +139,7 @@ class FuseNetAgent(nn.Module):
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=False)
                 logger.info("Fix alpha to all 0")
             else:
-                self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
+                self.alpha = nn.Parameter(torch.ones(self.num_weights) / 100, requires_grad=True)
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
             logger.info(f"Alpha's shape: {self.alpha.shape}")
         else:

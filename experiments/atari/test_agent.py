@@ -66,7 +66,6 @@ def convert_algorithm(algorithm):
         "PackNet": "packnet",
         "ProgNet": "prognet",
         "TV1": "tv_1",
-        "TV2": "tv_2",
     }
     return conversion_dict.get(algorithm, "unknown")
 
@@ -117,18 +116,12 @@ if __name__ == "__main__":
             ac = PackNetAgent.load(path, map_location=device)
             agent.critic = ac.critic
             agent.actor = ac.actor
-    elif algorithm == "tv_1":
+    elif algorithm == "tvnet":
         prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
         print(prevs_paths)
         agent = CnnTvNetAgent.load(
            dirname = args.load, envs = envs, base_dir=path_from_other_mode(args.load, 0), map_location=device
         )
-    elif algorithm == "tv_2":
-        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
-        print(prevs_paths)
-        agent = CnnTv2NetAgent.load(
-           dirname = args.load, envs = envs, base_dir=path_from_other_mode(args.load, 0), map_location=device
-        ) 
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)

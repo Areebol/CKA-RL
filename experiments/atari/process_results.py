@@ -35,35 +35,31 @@ METHOD_NAMES = {
     "componet": "CompoNet",
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
-    "tv_1": "TV1",
-    "tv_2": "TV2",
-    "fuse_1": "Fuse1",
-    "fuse_2": "Fuse2",
+    "tvnet": "TVNet",
+    "FuseNet": "FuseNet"
 }
 
 METHOD_COLORS = {
     "baseline": "darkgray",
-    "finetune": "tab:orange",
-    "componet": "tab:blue",
-    "prognet": "tab:green",
-    "packnet": "tab:purple",
-    "tv_1": "tab:red",
-    "tv_2": "tab:brown",
-    "fuse_1": "tab:pink",
-    "fuse_2": "tab:olive",
+    "finetune": "tab:blue",
+    "componet": "tab:green",
+    "prognet": "tab:grey",
+    "packnet": "tab:grey",
+    "tvnet": "tab:pink",
+    "FuseNet": "tab:red"
 }
 
 METHOD_ORDER = ["baseline", "componet", 
                 "finetune", "prognet", 
-                "packnet", "tv_1", "tv_2", 
-                "fuse_1", "fuse_2"]
+                "packnet", "tvnet", 
+                "FuseNet"
+                ]
 
 
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/Freeway",
-        choices=["data/envs/Freeway", "data/envs/SpaceInvaders", "data/Freeway", "data/SpaceInvaders"],
         help="path to the directory where the CSV of each task is stored")
     parser.add_argument("--eval-results", type=str, default="data/eval_Freeway/eval_results.csv", #"data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")
@@ -368,7 +364,7 @@ def process_eval(df, data, success_scores, env):
 def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
     methods = METHOD_ORDER
     num_tasks = len(data.keys())
-    fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 8))
+    fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 12))
 
     #
     # Plot all the method together

@@ -32,7 +32,6 @@ from models import (
     ProgressiveNetAgent,
     PackNetAgent,
     CnnTvNetAgent, 
-    CnnTv2NetAgent, 
     FuseNetAgent,
 )
 
@@ -40,12 +39,10 @@ from models import (
 @dataclass
 class Args:
     # Model type
-    method_type: str = "baseline"
+    method_type: str = "Baseline"
     """The name of the model to use as agent."""
     dino_size: Literal["s", "b", "l", "g"] = "s"
     """Size of the dino model (only needed when using dino)"""
-    save_dir: str = None
-    """Directory where the trained model will be saved. If not provided, the model won't be saved"""
     prev_units: Tuple[pathlib.Path, ...] = ()
     """Paths to the previous models. Only used when employing a CompoNet or cnn-simple-ft (finetune) agent"""
     mode: int = None
@@ -55,7 +52,7 @@ class Args:
     total_task_num: Optional[int] = None
     """Total number of tasks, required when using PackNet"""
     prevs_to_noise: Optional[int] = 0
-    """Number of previous policies to set to randomly selected distributions, only valid when method_type is `componet`"""
+    """Number of previous policies to set to randomly selected distributions, only valid when method_type is `CompoNet`"""
 
     # Experiment arguments
     exp_name: str = os.path.basename(__file__)[: -len(".py")]
@@ -124,6 +121,9 @@ class Args:
     
     debug: bool = False
     """log level"""
+    
+    tag: str = "Debug"
+    """experiment tag"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -160,7 +160,6 @@ if __name__ == "__main__":
     m = f"{args.mode}" if args.mode is not None else ""
     env_name = args.env_id.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
     run_name = f"{env_name}_{m}_{args.method_type}_{args.seed}"
-    logs = {"global_step": [0], "episodic_return": [0]}
     
     logger.info(f"Run's name: {run_name}")
     # if False:
@@ -175,7 +174,9 @@ if __name__ == "__main__":
     #         save_code=True,
     #         mode="offline",
     #     )
-    writer = SummaryWriter(f"runs/{run_name}")
+    logs = {"global_step": [0], "episodic_return": [0]}
+    logger.info(f"Tensorboard writing to runs/{args.tag}/{run_name}")
+    writer = SummaryWriter(f"runs/{args.tag}/{run_name}")
     writer.add_text(
         "hyperparameters",
         "|param|value|\n|-|-|\n%s"
@@ -203,27 +204,27 @@ if __name__ == "__main__":
     ), "only discrete action space is supported"
 
     logger.info(f"Method: {args.method_type}")
-    if args.method_type == "baseline":
+    if args.method_type == "Baseline":
         agent = CnnSimpleAgent(envs).to(device)
-    elif args.method_type == "finetune":
+    elif args.method_type == "Finetune":
         if len(args.prev_units) > 0:
             agent = CnnSimpleAgent.load(
                 args.prev_units[0], envs, load_critic=False, reset_actor=True
             ).to(device)
         else:
             agent = CnnSimpleAgent(envs).to(device)
-    elif args.method_type == "componet":
+    elif args.method_type == "CompoNet":
         agent = CnnCompoNetAgent(
             envs,
             prevs_paths=args.prev_units,
             finetune_encoder=args.componet_finetune_encoder,
             map_location=device,
         ).to(device)
-    elif args.method_type == "prognet":
+    elif args.method_type == "ProgNet":
         agent = ProgressiveNetAgent(
             envs, prevs_paths=args.prev_units, map_location=device
         ).to(device)
-    elif args.method_type == "packnet":
+    elif args.method_type == "PackNet":
         # retraining in 20% of the total timesteps
         packnet_retrain_start = args.total_timesteps - int(args.total_timesteps * 0.2)
 
@@ -245,17 +246,14 @@ if __name__ == "__main__":
                 restart_actor_critic=True,
                 freeze_bias=True,
             ).to(device)
-    elif args.method_type == "tv1":
+    elif args.method_type == "TvNet":
         agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
-                              map_location=device).to(device)
-    elif args.method_type == "tv2":
-        agent = CnnTv2NetAgent(envs, prevs_paths=args.prev_units, 
                               map_location=device).to(device)
     elif args.method_type == "FuseNet":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         encoder_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
-        logger.info("base_dir:", base_dir)  
-        logger.info("encoder_dir:", encoder_dir)  
+        logger.info(f"base_dir: {base_dir}")  
+        logger.info(f"encoder_dir: {encoder_dir}")  
         agent = FuseNetAgent(envs, base_dir=base_dir, 
                              encoder_dir=encoder_dir, prevs_paths=args.prev_units,
                               map_location=device).to(device)
@@ -307,7 +305,7 @@ if __name__ == "__main__":
             with torch.no_grad():
                 if (
                     args.track
-                    and args.method_type == "componet"
+                    and args.method_type == "CompoNet"
                     and global_step % 100 == 0
                 ):
                     action, logprob, _, value = agent.get_action_and_value(
@@ -316,11 +314,11 @@ if __name__ == "__main__":
                         global_step=global_step,
                         prevs_to_noise=args.prevs_to_noise,
                     )
-                elif args.method_type == "componet":
+                elif args.method_type == "CompoNet":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
                     )
-                elif "fuse" in args.method_type:
+                elif "FuseNet" in args.method_type:
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, 
                         log_writter=writer, 
@@ -397,7 +395,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                if args.method_type == "componet":
+                if args.method_type == "CompoNet":
                     _, newlogprob, entropy, newvalue = agent.get_action_and_value(
                         b_obs[mb_inds] / 255.0,
                         b_actions.long()[mb_inds],
@@ -452,7 +450,7 @@ if __name__ == "__main__":
                 optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
-                if args.method_type == "packnet":
+                if args.method_type == "PackNet":
                     if global_step >= packnet_retrain_start:
                         agent.start_retraining()  # can be called multiple times, only the first counts
                     agent.before_update()
@@ -495,11 +493,12 @@ if __name__ == "__main__":
     
     import pandas as pd
     df = pd.DataFrame(logs)
-    log_dir = f"data/{env_name}/{args.method_type}/{args.mode}" 
-    os.makedirs(log_dir, exist_ok=True)
-    df.to_csv(f"{log_dir}/returns.csv", index=False)
-    logger.info("saved log return to csv, return length:" + len(logs["episodic_return"]))
     
-    if args.save_dir is not None:
-        logger.info(f"Saving trained agent in `{args.save_dir}` with name `{run_name}`")
-        agent.save(dirname=f"{args.save_dir}/{run_name}")
+    if args.tag is not None:
+        log_dir = f"./data/{env_name}/{args.tag}/{args.method_type}/{args.mode}"  
+        logger.info(f"saved log return to {log_dir}/returns.csv") # ./data/Freeway/tag/FuseNet/mode/returns.csv
+        os.makedirs(log_dir, exist_ok=True)
+        df.to_csv(f"{log_dir}/returns.csv", index=False)
+    
+        logger.info(f"Saving trained agent in `./agents/{env_name}/{args.tag}` with name `{run_name}`")
+        agent.save(dirname=f"./agents/{env_name}/{args.tag}/{run_name}") # ./agents/Freeway/tag/run_name

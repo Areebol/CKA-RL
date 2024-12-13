@@ -1,25 +1,19 @@
 import subprocess
 import argparse
 import random
-from task_utils import TASKS, get_method_type
+from task_utils import TASKS
 from icecream import ic
+from loguru import logger
     
-method_choices = ["baseline",         # F1
-                  "finetune",         # FN
-                  "componet",         # CompoNet
-                  "packnet",          # PackNet
-                  "prognet",          # ProgNet
-                  "tv_1",             # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
-                  "tv_2",             # TV1 Task-Vector-1: Do Task-Vector on Encoder only
-                  "fuse_1",           # Fuse 1: Do fuse to Actor only
-                  "fuse_2",           # Fuse 2: Do fuse to Actor only + `Fix alpha`
-                  "fuse_3",           # Fuse 3: Do fuse to Actor only + `add Delta theta_0 = 0` + `large alpha's learning rate`
-                  "fuse_4",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
-                  "fuse_5",           # Fuse 4: Do fuse to Actor only + `add Delta theta_0 = 0` + `Fix alpha`
+method_choices = ["Baseline",         # F1
+                  "Finetune",         # FN
+                  "CompoNet",         # CompoNet
+                  "PackNet",          # PackNet
+                  "ProgNet",          # ProgNet
+                  "TvNet",            # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   "FuseNet",          # FuseNet
                   ]
 def parse_args():
-    # fmt: off
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--method_type", type=str, choices=method_choices, required=True)
@@ -29,13 +23,13 @@ def parse_args():
     parser.add_argument("--first-mode", type=int, required=True)
     parser.add_argument("--last-mode", type=int, required=True)
     parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--tag", type=str, default="Debug")
     
-    # fmt: on
     return parser.parse_args()
 
 
 args = parse_args()
-print(args)
+logger.info(f"experiments args : {args}")
 modes = TASKS[args.env]
 first_mode = args.first_mode
 last_mode = args.last_mode
@@ -55,35 +49,37 @@ last_idx = modes.index(last_mode)
 
 for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     # params
-    save_dir = f"agents/{env_name}"
+    save_dir = f"agents/{env_name}/{args.tag}"
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
-    params += f" --mode={task_id} --save-dir={save_dir}"
-    
-    # debug
+    params += f" --mode={task_id}"
+    params += f" --tag={args.tag}"
+    # debug mode
     params += (" --track" if not debug else " --no-track")
     if debug:
+        logger.debug(f"Running experiment within bugging mode")
         params += f" --total-timesteps=3000"
-
+        
     # method specific CLI arguments
-    if args.method_type == "componet":
+    if args.method_type == "CompoNet":
         params += " --componet-finetune-encoder"
-    if args.method_type == "packnet":
+    if args.method_type == "PackNet":
         params += f" --total-task-num={len(modes)}"
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.method_type in ["componet", "prognet", "tv_1", "tv_2", "FuseNet"] or 'fuse' in args.method_type:
+        if args.method_type in ["CompoNet", "ProgNet", "TvNet", "FuseNet"]:
             params += " --prev-units"
+            logger.info(f"Method {args.method_type} need prevs-units, adding prevs-units")
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.method_type in ["finetune", "packnet"]:
+        elif args.method_type in ["Finetune", "PackNet"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
             
     # Launch experiment
-    cmd = f"python3 run_ppo.py {params}"
-    print(cmd)
+    cmd = f"python run_ppo.py {params}"
+    logger.info(f"Running experiment script: {cmd}")
     res = subprocess.run(cmd.split(" "))
     if res.returncode != 0:
-        print(f"*** Process returned code {res.returncode}. Stopping on error.")
+        logger.error(f"Process {cmd} \n returned code {res.returncode}. Stopping on error.")
         quit(1)

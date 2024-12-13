@@ -37,19 +37,7 @@ def get_method_type(args):
         return "PackNet"
     elif args.method_type == "prognet":
         return "ProgNet"
-    elif args.method_type == "tv_1":
-        return "TV1"
-    elif args.method_type == "tv_2":
-        return "TV2"
-    elif args.method_type == "fuse_1":
-        return "Fuse1"
-    elif args.method_type == "fuse_2":
-        return "Fuse2"
-    elif args.method_type == "fuse_3":
-        return "Fuse3"
-    elif args.method_type == "fuse_4":
-        return "Fuse4"
-    elif args.method_type == "fuse_5":
-        return "Fuse5"
+    elif args.method_type == "tvnet":
+        return "TVNet"
     else:
         return None
