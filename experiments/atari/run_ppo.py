@@ -121,9 +121,11 @@ class Args:
     
     debug: bool = False
     """log level"""
-    
     tag: str = "Debug"
     """experiment tag"""
+    
+    alpha_factor: float = 1e-2
+    """fuse net's alpha initialization factor 1 * alpha_factor"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -254,8 +256,11 @@ if __name__ == "__main__":
         encoder_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
         logger.info(f"base_dir: {base_dir}")  
         logger.info(f"encoder_dir: {encoder_dir}")  
-        agent = FuseNetAgent(envs, base_dir=base_dir, 
-                             encoder_dir=encoder_dir, prevs_paths=args.prev_units,
+        agent = FuseNetAgent(envs, 
+                             base_dir=base_dir, 
+                             encoder_dir=encoder_dir, 
+                             prevs_paths=args.prev_units,
+                             alpha_factor=args.alpha_factor,
                               map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")

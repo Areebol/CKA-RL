@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument("--last-mode", type=int, required=True)
     parser.add_argument("--debug", type=bool, default=False)
     parser.add_argument("--tag", type=str, default="Debug")
+    parser.add_argument("--alpha_factor", type=float, default=None)
     
     return parser.parse_args()
 
@@ -53,6 +54,8 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
     params += f" --mode={task_id}"
     params += f" --tag={args.tag}"
+    if args.alpha_factor is not None:
+        params += f" --alpha_factor={args.alpha_factor}"
     # debug mode
     params += (" --track" if not debug else " --no-track")
     if debug:

@@ -126,6 +126,7 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
 class FuseNetAgent(nn.Module):
     def __init__(self, envs, base_dir, prevs_paths=[], 
                  fix_alpha: bool = False, encoder_dir=None,
+                 alpha_factor: float = 1/100,
                  map_location=None):
         super().__init__()
         self.hidden_dim = 512
@@ -139,9 +140,10 @@ class FuseNetAgent(nn.Module):
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=False)
                 logger.info("Fix alpha to all 0")
             else:
-                self.alpha = nn.Parameter(torch.ones(self.num_weights) / 100, requires_grad=True)
+                self.alpha = nn.Parameter(torch.ones(self.num_weights) * alpha_factor, requires_grad=True)
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
-            logger.info(f"Alpha's shape: {self.alpha.shape}")
+                logger.info("Train alpha")
+            logger.info(f"Alpha's shape: {self.alpha.shape}, Alpha: {self.alpha.data}, Alpha scale: {self.alpha_scale.data}")
         else:
             self.alpha = None
             self.alpha_scale = None
