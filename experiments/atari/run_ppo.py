@@ -126,6 +126,8 @@ class Args:
     
     alpha_factor: float = 1e-2
     """fuse net's alpha initialization factor 1 * alpha_factor"""
+    fix_alpha: bool = False
+    """fuse net's alpha would be fix to constant"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -261,7 +263,8 @@ if __name__ == "__main__":
                              encoder_dir=encoder_dir, 
                              prevs_paths=args.prev_units,
                              alpha_factor=args.alpha_factor,
-                              map_location=device).to(device)
+                             fix_alpha=args.fix_alpha,
+                             map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)

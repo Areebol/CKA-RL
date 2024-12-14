@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--debug", type=bool, default=False)
     parser.add_argument("--tag", type=str, default="Debug")
     parser.add_argument("--alpha_factor", type=float, default=None)
+    parser.add_argument("--fix_alpha", type=bool, default=False)
     
     return parser.parse_args()
 
@@ -56,6 +57,9 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params += f" --tag={args.tag}"
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
+    if args.fix_alpha:
+        params += f" --fix_alpha"
+        
     # debug mode
     params += (" --track" if not debug else " --no-track")
     if debug:
