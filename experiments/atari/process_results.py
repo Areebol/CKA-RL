@@ -32,20 +32,20 @@ SETTINGS = {
 METHOD_NAMES = {
     "baseline": "Baseline",
     "finetune": "FT",
-    # "componet": "CompoNet",
-    # "prognet": "ProgressiveNet",
-    # "packnet": "PackNet",
-    # "tvnet": "TVNet",
+    "componet": "CompoNet",
+    "prognet": "ProgressiveNet",
+    "packnet": "PackNet",
+    "tvnet": "TVNet",
     "FuseNet": "FuseNet"
 }
 
 METHOD_COLORS = {
     "baseline": "darkgray",
     "finetune": "tab:blue",
-    # "componet": "tab:green",
-    # "prognet": "tab:grey",
-    # "packnet": "tab:grey",
-    # "tvnet": "tab:pink",
+    "componet": "tab:green",
+    "prognet": "tab:grey",
+    "packnet": "tab:grey",
+    "tvnet": "tab:pink",
     "FuseNet": "tab:red"
 }
 
@@ -54,9 +54,9 @@ METHOD_ORDER = ["baseline", "componet",
                 "packnet", "tvnet", 
                 "FuseNet"
                 ]
-METHOD_ORDER = ["baseline", 
-                "FuseNet"
-                ]
+# METHOD_ORDER = ["baseline", 
+#                 "FuseNet"
+#                 ]
 
 
 def parse_args():

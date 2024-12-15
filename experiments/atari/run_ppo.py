@@ -128,6 +128,8 @@ class Args:
     """fuse net's alpha initialization factor 1 * alpha_factor"""
     fix_alpha: bool = False
     """fuse net's alpha would be fix to constant"""
+    alpha_learning_rate: float = 2.5e-4
+    """the learning rate of alpha optimizer"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -270,13 +272,14 @@ if __name__ == "__main__":
         quit(1)
         
     # print(agent)
-    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad]
+    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad and name != "alpha" and print(name)]
     
     # for name, param in agent.named_parameters():
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
-
+    if args.method_type == "FuseNet":
+        alpha_optimizer = optim.Adam(agent.alpha, lr=args.alpha_learning_rate, eps=1e-5)
     # ALGO Logic: Storage setup
     obs = torch.zeros(
         (args.num_steps, args.num_envs) + envs.single_observation_space.shape
@@ -303,6 +306,9 @@ if __name__ == "__main__":
             frac = 1.0 - (iteration - 1.0) / args.num_iterations
             lrnow = frac * args.learning_rate
             optimizer.param_groups[0]["lr"] = lrnow
+            if args.method_type == "FuseNet":
+                alpha_lrnow = frac * args.alpha_learning_rate
+                alpha_optimizer.param_gourps[0]["lr"] = alpha_lrnow
 
         for step in range(0, args.num_steps):
             global_step += args.num_envs
@@ -456,6 +462,8 @@ if __name__ == "__main__":
                 loss = pg_loss - args.ent_coef * entropy_loss + v_loss * args.vf_coef
 
                 optimizer.zero_grad()
+                if args.method_type == "FuseNet":
+                    alpha_optimizer.zero_grad()
                 loss.backward()
                 nn.utils.clip_grad_norm_(agent.parameters(), args.max_grad_norm)
                 if args.method_type == "PackNet":
@@ -463,6 +471,8 @@ if __name__ == "__main__":
                         agent.start_retraining()  # can be called multiple times, only the first counts
                     agent.before_update()
                 optimizer.step()
+                if args.method_type == "FuseNet":
+                    alpha_optimizer.step()
                 
             if args.target_kl is not None and approx_kl > args.target_kl:
                 break
@@ -475,6 +485,10 @@ if __name__ == "__main__":
         writer.add_scalar(
             "charts/learning_rate", optimizer.param_groups[0]["lr"], global_step
         )
+        if args.method_type == "FuseNet":
+            writer.add_scalar(
+                "charts/alpha_learning_rate", alpha_optimizer.param_groups[0]["lr"], global_step
+            )
         writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
         writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
         writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
