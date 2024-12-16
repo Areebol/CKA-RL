@@ -60,6 +60,20 @@ class FuseLinear(nn.Module):
                 self.register_parameter('biases', None)
         self.reset_parameters()
 
+    @torch.no_grad()
+    def merge_weight(self):
+        if self.num_weights <= 0:
+            logger.debug("Not weights or alpha exists, return original weight")
+            return
+        logger.info("Merge FuseLinear's weight = theta + alpha * tau")
+        logger.info(f"weight's shape: {self.weight.shape}, weights' shape: {self.weights.shape}, alpha's shape: {self.alpha.shape}")
+        alphas_normalized = F.softmax(self.alpha * self.alpha_scale, dim=0)
+        # weight = self.weight.data # debug
+        self.weight.data = self.weight.data + (alphas_normalized.view(-1, 1, 1) * self.weights.data).sum(dim = 0)
+        if self._bias:
+            self.bias.data = self.bias.data + (alphas_normalized.view(-1,1) * self.biaes.data).sum(dim=0)
+        # logger.debug(weight == self.weight.data) # debug
+
     def reset_parameters(self) -> None:
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
         # uniform(-1/sqrt(in_features), 1/sqrt(in_features)). For details, see
@@ -127,8 +141,10 @@ class FuseNetAgent(nn.Module):
     def __init__(self, envs, base_dir, prevs_paths=[], 
                  fix_alpha: bool = False, encoder_dir=None,
                  alpha_factor: float = 1/100,
+                 delta_theta_mode: str = "T",
                  map_location=None):
         super().__init__()
+        self.delta_theta_mode = delta_theta_mode
         self.hidden_dim = 512
         self.envs = envs
         self.i = 0
@@ -188,6 +204,12 @@ class FuseNetAgent(nn.Module):
 
     def save(self, dirname):
         os.makedirs(dirname, exist_ok=True)
+        # for actor, merge `theta + alpha * tau` to `theta` if delta_theta_mode  == 'TAT'
+        if self.delta_theta_mode == "TAT":
+            logger.info("save weight as theta + alpha * tau")
+            self.merge_actor_weight()
+        else:
+            logger.info("save weight as theta")
         torch.save(self.actor, f"{dirname}/actor.pt")
         torch.save(self.network, f"{dirname}/encoder.pt")
         torch.save(self.critic, f"{dirname}/critic.pt")
@@ -200,6 +222,15 @@ class FuseNetAgent(nn.Module):
         if not reset_actor:
             model.actor = torch.load(f"{dirname}/actor.pt", map_location=map_location)            
         return model
+
+    def merge_actor_weight(self):
+        if self.alpha is None:
+            logger.debug("Not alpha exist in FuseNetAgent, not merge")
+            return 
+        
+        logger.debug("merge actor's weight")
+        for j in [0,2]:
+            self.actor[j].merge_weight()
 
     def load_actor_base_and_vectors(self, base_dir, vector_dirs):
         """return theta_0, prevs_theta when base_dir exists
@@ -222,7 +253,7 @@ class FuseNetAgent(nn.Module):
             vector_weight = []
             vector_bias = []
             for p in vector_dirs:
-                logger.info(f"Loading vector from {p}/actor.pt")
+                # logger.debug(f"Loading vector from {p}/actor.pt")
                 # load theta_i + base weight from prevs
                 vector_state_dict = torch.load(f"{p}/actor.pt").state_dict()
                 # get theta_i

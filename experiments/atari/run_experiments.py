@@ -2,7 +2,7 @@ import subprocess
 import argparse
 import random
 from task_utils import TASKS
-from icecream import ic
+# from icecream import ic
 from loguru import logger
     
 method_choices = ["Baseline",         # F1
@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument("--alpha_factor", type=float, default=None)
     parser.add_argument("--fix_alpha", type=bool, default=False)
     parser.add_argument("--alpha_learning_rate", type=float, default=2.5e-4)
+    parser.add_argument("--delta_theta_mode", type=str, default="T", choices=["T","TAT"]) # T = theta, TAT = theta + alpha*tau
     
     return parser.parse_args()
 
@@ -38,7 +39,7 @@ first_mode = args.first_mode
 last_mode = args.last_mode
 debug = args.debug
 method_type = args.method_type
-
+logger.debug(f"Experiment Tag: {args.tag}")
 
 seed = random.randint(0, 1e6) if args.seed is None else args.seed
 
@@ -56,6 +57,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
     params += f" --mode={task_id}"
     params += f" --tag={args.tag}"
+    params += f" --delta_theta_mode={args.delta_theta_mode}"
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
     if args.fix_alpha:
@@ -64,6 +66,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
         
     # debug mode
     params += (" --track" if not debug else " --no-track")
+    params += (" --debug" if debug else " --no-debug")
     if debug:
         logger.debug(f"Running experiment within bugging mode")
         params += f" --total-timesteps=3000"

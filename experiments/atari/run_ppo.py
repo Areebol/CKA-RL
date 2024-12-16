@@ -130,6 +130,8 @@ class Args:
     """fuse net's alpha would be fix to constant"""
     alpha_learning_rate: float = 2.5e-4
     """the learning rate of alpha optimizer"""
+    delta_theta_mode: str = "T" # T or TAT
+    """the mode to cacluate delta theta"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -267,6 +269,7 @@ if __name__ == "__main__":
                              prevs_paths=args.prev_units,
                              alpha_factor=args.alpha_factor,
                              fix_alpha=args.fix_alpha,
+                             delta_theta_mode=args.delta_theta_mode,
                              map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
@@ -499,7 +502,7 @@ if __name__ == "__main__":
         writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
         writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
         writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        logger.debug(f"SPS:{int(global_step / (time.time() - start_time))}")
+        # logger.debug(f"SPS:{int(global_step / (time.time() - start_time))}")
         writer.add_scalar(
             "charts/SPS", int(global_step / (time.time() - start_time)), global_step
         )
