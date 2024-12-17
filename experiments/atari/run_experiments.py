@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--fix_alpha", type=bool, default=False)
     parser.add_argument("--alpha_learning_rate", type=float, default=2.5e-4)
     parser.add_argument("--delta_theta_mode", type=str, default="T", choices=["T","TAT"]) # T = theta, TAT = theta + alpha*tau
+    parser.add_argument("--fuse_encoder", type=bool, default=False) # fuse encoder
     
     return parser.parse_args()
 
@@ -58,6 +59,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params += f" --mode={task_id}"
     params += f" --tag={args.tag}"
     params += f" --delta_theta_mode={args.delta_theta_mode}"
+    params += (f" --fuse_encoder" if args.fuse_encoder else f" --no-fuse_encoder")
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
     if args.fix_alpha:

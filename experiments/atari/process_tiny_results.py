@@ -31,17 +31,17 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "baseline": "Baseline",
-    "finetune": "FT",
+    "Finetune": "FT",
     "FuseNet": "FuseNet"
 }
 
 METHOD_COLORS = {
     "baseline": "darkgray",
-    "finetune": "tab:blue",
+    "Finetune": "tab:blue",
     "FuseNet": "tab:red"
 }
 
-METHOD_ORDER = ["baseline", "finetune",
+METHOD_ORDER = ["baseline", "Finetune",
                 "FuseNet"
                 ]
 
@@ -322,7 +322,7 @@ def process_eval(df, data, success_scores, env):
             s = sel["ep ret"].values >= success_scores[task_id]
 
             # the performance when the current task was task_id
-            past_perf = data[task_id]["finetune"]["final_success"]
+            past_perf = data[task_id]["Finetune"]["final_success"]
 
             perf_total += list(s)
             forg_total += list(past_perf - s)

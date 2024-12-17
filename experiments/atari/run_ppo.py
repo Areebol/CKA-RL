@@ -132,6 +132,8 @@ class Args:
     """the learning rate of alpha optimizer"""
     delta_theta_mode: str = "T" # T or TAT
     """the mode to cacluate delta theta"""
+    fuse_encoder: bool = False # True or False
+    """whether to fuse encoder"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -270,6 +272,7 @@ if __name__ == "__main__":
                              alpha_factor=args.alpha_factor,
                              fix_alpha=args.fix_alpha,
                              delta_theta_mode=args.delta_theta_mode,
+                             fuse_encoder=args.fuse_encoder,
                              map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
@@ -530,5 +533,5 @@ if __name__ == "__main__":
         os.makedirs(log_dir, exist_ok=True)
         df.to_csv(f"{log_dir}/returns.csv", index=False)
     
-        logger.info(f"Saving trained agent in `./agents/{env_name}/{args.tag}` with name `{run_name}`")
+        logger.info(f"Saving trained agent to `./agents/{env_name}/{args.tag}/{run_name}`")
         agent.save(dirname=f"./agents/{env_name}/{args.tag}/{run_name}") # ./agents/Freeway/tag/run_name
