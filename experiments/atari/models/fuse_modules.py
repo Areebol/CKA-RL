@@ -291,7 +291,8 @@ class FuseEncoder(nn.Module):
             vector_bias = []
             for p in vector_dirs:
                 if idx == 0:
-                    logger.debug(f"Loading vectors from {p}/encoder.pt")
+                    # logger.debug(f"Loading vectors from {p}/encoder.pt")
+                    ...
                 # load theta_i + base weight from prevs
                 vector_state_dict = torch.load(f"{p}/encoder.pt").state_dict()
                 # get theta_i
@@ -307,7 +308,7 @@ class FuseEncoder(nn.Module):
         if base[0] is None:
             logger.warning("Not base or vectors exist")
             return 
-        logger.debug("Setting FuseEncoder's weight and vectors")
+        # logger.debug("Setting FuseEncoder's weight and vectors")
         for idx,i in enumerate(self.fuse_layers):
             self.network[i].set_base_and_vectors(base[idx],vectors[idx])
         
@@ -366,7 +367,8 @@ class FuseActor(nn.Module):
             vector_bias = []
             for p in vector_dirs:
                 if idx == 0:
-                    logger.debug(f"Loading vectors from {p}/actor.pt")
+                    # logger.debug(f"Loading vectors from {p}/actor.pt")
+                    ...
                 # load theta_i + base weight from prevs
                 vector_state_dict = torch.load(f"{p}/actor.pt").state_dict()
                 # get theta_i
@@ -382,7 +384,7 @@ class FuseActor(nn.Module):
         if base[0] is None:
             logger.warning("Not base or vectors exist")
             return 
-        logger.debug("Setting FuseEncoder's weight and vectors")
+        # logger.debug("Setting FuseActor's weight and vectors")
         for idx,i in enumerate(self.fuse_layers):
             self.network[i].set_base_and_vectors(base[idx],vectors[idx])
         

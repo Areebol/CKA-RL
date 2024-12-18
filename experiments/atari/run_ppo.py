@@ -192,7 +192,7 @@ if __name__ == "__main__":
     #         mode="offline",
     #     )
     logs = {"global_step": [0], "episodic_return": [0]}
-    logger.info(f"Tensorboard writing to runs/{args.tag}/{run_name}")
+    # logger.info(f"Tensorboard writing to runs/{args.tag}/{run_name}")
     writer = SummaryWriter(f"runs/{args.tag}/{run_name}")
     writer.add_text(
         "hyperparameters",
@@ -269,8 +269,6 @@ if __name__ == "__main__":
     elif args.method_type == "FuseNet":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         encoder_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
-        logger.info(f"base_dir: {base_dir}")  
-        logger.info(f"encoder_dir: {encoder_dir}")  
         agent = FuseNetAgent(envs, 
                              base_dir=base_dir, 
                              prevs_paths=args.prev_units,
@@ -537,9 +535,9 @@ if __name__ == "__main__":
     df = pd.DataFrame(logs)
     if args.tag is not None:
         log_dir = f"./data/{env_name}/{args.tag}/{args.method_type}/{args.mode}"  
-        logger.info(f"saved log return to {log_dir}/returns.csv") # ./data/Freeway/tag/FuseNet/mode/returns.csv
+        # logger.info(f"saved log return to {log_dir}/returns.csv") # ./data/Freeway/tag/FuseNet/mode/returns.csv
         os.makedirs(log_dir, exist_ok=True)
         df.to_csv(f"{log_dir}/returns.csv", index=False)
     
-        logger.info(f"Saving trained agent to `./agents/{env_name}/{args.tag}/{run_name}`")
+        # logger.info(f"Saving trained agent to `./agents/{env_name}/{args.tag}/{run_name}`")
         agent.save(dirname=f"./agents/{env_name}/{args.tag}/{run_name}") # ./agents/Freeway/tag/run_name

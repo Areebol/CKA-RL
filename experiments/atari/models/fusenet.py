@@ -39,7 +39,7 @@ class FuseNetAgent(nn.Module):
         assert(fuse_encoder or fuse_actor)
         self.num_weights = len(prevs_paths)
         latest_dir = prevs_paths[-1] if self.num_weights > 0 else None
-        
+        logger.info(f"FuseAgent: fuse encoder = {fuse_encoder}, fuse actor = {fuse_actor}")
         # Alpha Setting
         if self.num_weights > 0:
             if fix_alpha: # Alpha is untrainable
@@ -51,7 +51,7 @@ class FuseNetAgent(nn.Module):
                 logger.info("Train alpha")
             if not use_alpha_scale or fix_alpha:
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=False)
-            logger.info(f"Alpha's shape: {self.alpha.shape}, Alpha: {self.alpha.data}, Alpha scale: {self.alpha_scale.data}")
+            # logger.info(f"Alpha's shape: {self.alpha.shape}, Alpha: {self.alpha.data}, Alpha scale: {self.alpha_scale.data}")
         else:
             self.alpha = None
             self.alpha_scale = None
