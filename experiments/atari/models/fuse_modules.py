@@ -238,20 +238,38 @@ class FuseEncoder(nn.Module):
     def __init__(self, hidden_dim=512, layer_init=lambda x, **kwargs: x,
                     num_weights: int = 0, # 0 = train base weight， n = train base weight + alpha * tau
                     alpha: nn.Parameter = None,
-                    alpha_scale: nn.Parameter = None,):
+                    alpha_scale: nn.Parameter = None,
+                    global_alpha: bool = True):
         super().__init__()
         self.fuse_layers = [0,2,4,7]
-        self.network = nn.Sequential(
-            layer_init(FuseConv2d(4, 32, 8, stride=4, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 0
-            nn.ReLU(),
-            layer_init(FuseConv2d(32, 64, 4, stride=2, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 2
-            nn.ReLU(),
-            layer_init(FuseConv2d(64, 64, 3, stride=1, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 4
-            nn.ReLU(),
-            nn.Flatten(),
-            layer_init(FuseLinear(64 * 7 * 7, hidden_dim,alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 7
-            nn.ReLU(),
-        )
+        if global_alpha or num_weights == 0:
+            self.network = nn.Sequential(
+                layer_init(FuseConv2d(4, 32, 8, stride=4, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 0
+                nn.ReLU(),
+                layer_init(FuseConv2d(32, 64, 4, stride=2, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 2
+                nn.ReLU(),
+                layer_init(FuseConv2d(64, 64, 3, stride=1, alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 4
+                nn.ReLU(),
+                nn.Flatten(),
+                layer_init(FuseLinear(64 * 7 * 7, hidden_dim,alpha=alpha, alpha_scale=alpha_scale,num_weights=num_weights)), # 7
+                nn.ReLU(),
+            )
+        else:
+            logger.debug("FuseEncoder using local alphas")
+            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            logger.debug(f"{self.alphas}")
+            self.network = nn.Sequential(
+                layer_init(FuseConv2d(4, 32, 8, stride=4, alpha=self.alphas[0], alpha_scale=self.alpha_scales[0],num_weights=num_weights)), # 0
+                nn.ReLU(),
+                layer_init(FuseConv2d(32, 64, 4, stride=2, alpha=self.alphas[1], alpha_scale=self.alpha_scales[1],num_weights=num_weights)), # 2
+                nn.ReLU(),
+                layer_init(FuseConv2d(64, 64, 3, stride=1, alpha=self.alphas[2], alpha_scale=self.alpha_scales[2],num_weights=num_weights)), # 4
+                nn.ReLU(),
+                nn.Flatten(),
+                layer_init(FuseLinear(64 * 7 * 7, hidden_dim,alpha=self.alphas[3], alpha_scale=self.alpha_scales[3],num_weights=num_weights)), # 7
+                nn.ReLU(),
+            )
      
     def load_base_and_vectors(self, base_dir, vector_dirs):   
         base = []
@@ -304,16 +322,30 @@ class FuseActor(nn.Module):
     def __init__(self, hidden_dim=512, n_actions=0, layer_init=lambda x, **kwargs: x,
                     num_weights: int = 0, # 0 = train base weight， n = train base weight + alpha * tau
                     alpha: nn.Parameter = None,
-                    alpha_scale: nn.Parameter = None,):
+                    alpha_scale: nn.Parameter = None,
+                    global_alpha: bool = True):
         super().__init__()
         self.fuse_layers = [0,2]
-        self.network = nn.Sequential(
-            layer_init(FuseLinear(hidden_dim, hidden_dim, num_weights=num_weights, 
-                                  alpha=alpha, alpha_scale=alpha_scale)),
-            nn.ReLU(),
-            layer_init(FuseLinear(hidden_dim, n_actions, num_weights=num_weights, 
-                                  alpha=alpha, alpha_scale=alpha_scale),std=0.01),
-        )
+        if global_alpha or num_weights == 0:
+            self.network = nn.Sequential(
+                layer_init(FuseLinear(hidden_dim, hidden_dim, num_weights=num_weights, 
+                                    alpha=alpha, alpha_scale=alpha_scale)),
+                nn.ReLU(),
+                layer_init(FuseLinear(hidden_dim, n_actions, num_weights=num_weights, 
+                                    alpha=alpha, alpha_scale=alpha_scale),std=0.01),
+            )
+        else:
+            logger.debug("FuseActor using local alphas")
+            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            logger.debug(f"{self.alphas}")
+            self.network = nn.Sequential(
+                layer_init(FuseLinear(hidden_dim, hidden_dim, num_weights=num_weights, 
+                                    alpha=self.alphas[0], alpha_scale=self.alpha_scales[0])),
+                nn.ReLU(),
+                layer_init(FuseLinear(hidden_dim, n_actions, num_weights=num_weights, 
+                                    alpha=self.alphas[1], alpha_scale=self.alpha_scales[1]),std=0.01),
+            )
         
     def load_base_and_vectors(self, base_dir, vector_dirs):
         base = []

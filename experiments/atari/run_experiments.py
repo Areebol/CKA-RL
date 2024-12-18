@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument("--fuse_encoder", action='store_true') # fuse encoder
     parser.add_argument("--fuse_actor", action='store_true') # fuse actor
     parser.add_argument("--reset_actor", action='store_true') # reset actor
+    parser.add_argument("--global_alpha", action='store_true') # wehter to use global alpha for whole agent
     
     return parser.parse_args()
 
@@ -64,6 +65,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params += (f" --fuse_encoder" if args.fuse_encoder else f" --no-fuse_encoder")
     params += (f" --fuse_actor" if args.fuse_actor else f" --no-fuse_actor")
     params += (f" --reset_actor" if args.reset_actor else f" --no-reset_actor")
+    params += (f" --global_alpha" if args.global_alpha else f" --no-global_alpha")
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
     if args.fix_alpha:

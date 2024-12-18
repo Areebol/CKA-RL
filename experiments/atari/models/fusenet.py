@@ -21,6 +21,7 @@ class FuseNetAgent(nn.Module):
     def __init__(self, envs, base_dir, prevs_paths=[], 
                  fix_alpha: bool = False,
                  alpha_factor: float = 1/100,
+                 global_alpha: bool = True,
                  delta_theta_mode: str = "T",
                  fuse_encoder: bool = False,
                  fuse_actor: bool = True,
@@ -30,6 +31,7 @@ class FuseNetAgent(nn.Module):
         super().__init__()
         self.delta_theta_mode = delta_theta_mode
         self.fuse_encoder = fuse_encoder
+        self.global_alpha = global_alpha
         self.fuse_actor = fuse_actor
         self.hidden_dim = 512
         self.envs = envs
@@ -62,7 +64,8 @@ class FuseNetAgent(nn.Module):
                                     n_actions=envs.single_action_space.n,
                                     alpha=self.alpha,
                                     alpha_scale=self.alpha_scale,
-                                    num_weights=self.num_weights )
+                                    num_weights=self.num_weights,
+                                    global_alpha=self.global_alpha)
             self.actor.set_base_and_vectors(base_dir, prevs_paths)
         else:
             if latest_dir is not None and reset_actor is False:
@@ -81,7 +84,8 @@ class FuseNetAgent(nn.Module):
                                        layer_init=layer_init, 
                                        alpha=self.alpha,
                                        alpha_scale=self.alpha_scale,
-                                       num_weights=self.num_weights )
+                                       num_weights=self.num_weights,
+                                       global_alpha=self.global_alpha)
             self.network.set_base_and_vectors(base_dir, prevs_paths)
         else:
             if latest_dir is not None:

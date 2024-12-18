@@ -138,6 +138,8 @@ class Args:
     """whether to fuse actor"""
     reset_actor: bool = True # True or False
     """whether to reset actor"""
+    global_alpha: bool = True # True or False
+    """whether to use global alpha for whole agent"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -278,6 +280,7 @@ if __name__ == "__main__":
                              fuse_encoder=args.fuse_encoder,
                              fuse_actor=args.fuse_actor,
                              reset_actor=args.reset_actor,
+                             global_alpha=args.global_alpha,
                              map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
