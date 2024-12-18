@@ -22,13 +22,15 @@ def parse_args():
 
     parser.add_argument("--first-mode", type=int, required=True)
     parser.add_argument("--last-mode", type=int, required=True)
-    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--debug", action='store_true')
     parser.add_argument("--tag", type=str, default="Debug")
     parser.add_argument("--alpha_factor", type=float, default=None)
-    parser.add_argument("--fix_alpha", type=bool, default=False)
+    parser.add_argument("--fix_alpha", action='store_true')
     parser.add_argument("--alpha_learning_rate", type=float, default=2.5e-4)
     parser.add_argument("--delta_theta_mode", type=str, default="T", choices=["T","TAT"]) # T = theta, TAT = theta + alpha*tau
-    parser.add_argument("--fuse_encoder", type=bool, default=False) # fuse encoder
+    parser.add_argument("--fuse_encoder", action='store_true') # fuse encoder
+    parser.add_argument("--fuse_actor", action='store_true') # fuse actor
+    parser.add_argument("--reset_actor", action='store_true') # reset actor
     
     return parser.parse_args()
 
@@ -60,6 +62,8 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params += f" --tag={args.tag}"
     params += f" --delta_theta_mode={args.delta_theta_mode}"
     params += (f" --fuse_encoder" if args.fuse_encoder else f" --no-fuse_encoder")
+    params += (f" --fuse_actor" if args.fuse_actor else f" --no-fuse_actor")
+    params += (f" --reset_actor" if args.reset_actor else f" --no-reset_actor")
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
     if args.fix_alpha:

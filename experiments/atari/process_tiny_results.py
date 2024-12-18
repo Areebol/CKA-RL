@@ -31,18 +31,22 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "baseline": "Baseline",
-    "Finetune": "FT",
-    "FuseNet": "FuseNet"
+    "finetune": "FT",
+    "FuseNet": "FuseNet",
+    "FuseNetT": "FuseNetT",
+    "FuseNetTAT": "FuseNetTAT",
 }
 
 METHOD_COLORS = {
     "baseline": "darkgray",
-    "Finetune": "tab:blue",
-    "FuseNet": "tab:red"
+    "finetune": "tab:blue",
+    "FuseNet": "tab:red",
+    "FuseNetT": "tab:green",
+    "FuseNetTAT": "tab:orange",
 }
 
-METHOD_ORDER = ["baseline", "Finetune",
-                "FuseNet"
+METHOD_ORDER = ["baseline", "finetune",
+                "FuseNet", "FuseNetT", "FuseNetTAT"
                 ]
 
 

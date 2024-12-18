@@ -6,9 +6,10 @@ TRAIN_MODES="--first-mode 0 --last-mode 7"
 python run_experiments.py --method_type FuseNet \
                           --alpha_learning_rate 2.5e-4 \
                           --delta_theta_mode T \
-                          --fuse_encoder True \
-                          --tag "FuseEncoderActor" \
                           --alpha_factor 1e-3 \
+                          --fuse_actor \
+                          --tag "Debug" \
                           $TRAIN_MODES \
                           --seed $SEED \
-
+                        #   --debug
+                        #   --fuse_encoder \

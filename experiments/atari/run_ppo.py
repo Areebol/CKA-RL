@@ -134,6 +134,10 @@ class Args:
     """the mode to cacluate delta theta"""
     fuse_encoder: bool = False # True or False
     """whether to fuse encoder"""
+    fuse_actor: bool = True # True or False
+    """whether to fuse actor"""
+    reset_actor: bool = True # True or False
+    """whether to reset actor"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -267,12 +271,13 @@ if __name__ == "__main__":
         logger.info(f"encoder_dir: {encoder_dir}")  
         agent = FuseNetAgent(envs, 
                              base_dir=base_dir, 
-                             encoder_dir=encoder_dir, 
                              prevs_paths=args.prev_units,
                              alpha_factor=args.alpha_factor,
                              fix_alpha=args.fix_alpha,
                              delta_theta_mode=args.delta_theta_mode,
                              fuse_encoder=args.fuse_encoder,
+                             fuse_actor=args.fuse_actor,
+                             reset_actor=args.reset_actor,
                              map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
