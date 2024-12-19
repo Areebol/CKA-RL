@@ -30,7 +30,6 @@ TRAIN_MODES="--first-mode 2 --last-mode 7"
 python run_experiments.py --method_type FuseNet \
                           --alpha_learning_rate 2.5e-3 \
                           --delta_theta_mode TAT \
-                          --alpha_factor 1e-3 \
                           --fuse_actor \
                           --tag "FuseActorOnlyRandn2.5e-3" \
                           $TRAIN_MODES \

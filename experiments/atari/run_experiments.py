@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument("--last-mode", type=int, required=True)
     parser.add_argument("--debug", action='store_true')
     parser.add_argument("--tag", type=str, default="Debug")
+    parser.add_argument("--total_timesteps", type=int, default=int(1e6))
     parser.add_argument("--alpha_factor", type=float, default=None)
     parser.add_argument("--fix_alpha", action='store_true')
     parser.add_argument("--alpha_learning_rate", type=float, default=2.5e-4)
@@ -61,6 +62,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
     params += f" --mode={task_id}"
     params += f" --tag={args.tag}"
+    params += f" --total_timesteps={args.total_timesteps}"
     params += f" --delta_theta_mode={args.delta_theta_mode}"
     params += (f" --fuse_encoder" if args.fuse_encoder else f" --no-fuse_encoder")
     params += (f" --fuse_actor" if args.fuse_actor else f" --no-fuse_actor")
