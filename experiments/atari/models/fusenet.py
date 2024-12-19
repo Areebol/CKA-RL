@@ -46,7 +46,9 @@ class FuseNetAgent(nn.Module):
                 self.alpha = nn.Parameter(torch.zeros(self.num_weights), requires_grad=False)
                 logger.info("Fix alpha to all 0")
             else: # Alpha is trainable
-                self.alpha = nn.Parameter(torch.ones(self.num_weights) * alpha_factor, requires_grad=True)
+                # self.alpha = nn.Parameter(torch.ones(self.num_weights) * alpha_factor, requires_grad=True)
+                
+                self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
                 logger.info("Train alpha")
             if not use_alpha_scale or fix_alpha:

@@ -33,20 +33,20 @@ METHOD_NAMES = {
     "baseline": "Baseline",
     "finetune": "FT",
     "FuseNet": "FuseNet",
-    "FuseNetT": "FuseNetT",
-    "FuseNetTAT": "FuseNetTAT",
+    # "FuseNetT": "FuseNetT",
+    # "FuseNetTAT": "FuseNetTAT",
 }
 
 METHOD_COLORS = {
     "baseline": "darkgray",
     "finetune": "tab:blue",
     "FuseNet": "tab:red",
-    "FuseNetT": "tab:green",
-    "FuseNetTAT": "tab:orange",
+    # "FuseNetT": "tab:green",
+    # "FuseNetTAT": "tab:orange",
 }
 
 METHOD_ORDER = ["baseline", "finetune",
-                "FuseNet", "FuseNetT", "FuseNetTAT"
+                "FuseNet", 
                 ]
 
 

@@ -256,8 +256,8 @@ class FuseEncoder(nn.Module):
             )
         else:
             logger.debug("FuseEncoder using local alphas")
-            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
-            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(alpha.requires_grad)) for _ in range(len(self.fuse_layers))])
+            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(alpha_scale.requires_grad)) for _ in range(len(self.fuse_layers))])
             logger.debug(f"{self.alphas}")
             self.network = nn.Sequential(
                 layer_init(FuseConv2d(4, 32, 8, stride=4, alpha=self.alphas[0], alpha_scale=self.alpha_scales[0],num_weights=num_weights)), # 0
@@ -337,8 +337,8 @@ class FuseActor(nn.Module):
             )
         else:
             logger.debug("FuseActor using local alphas")
-            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
-            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(True)) for _ in range(len(self.fuse_layers))])
+            self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(alpha.requires_grad)) for _ in range(len(self.fuse_layers))])
+            self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(alpha_scale.requires_grad)) for _ in range(len(self.fuse_layers))])
             logger.debug(f"{self.alphas}")
             self.network = nn.Sequential(
                 layer_init(FuseLinear(hidden_dim, hidden_dim, num_weights=num_weights, 
