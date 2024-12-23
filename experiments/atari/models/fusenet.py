@@ -27,6 +27,8 @@ class FuseNetAgent(nn.Module):
                  fuse_actor: bool = True,
                  reset_actor: bool = False,
                  use_alpha_scale: bool = True,
+                 alpha_init: str = "Randn",
+                 alpha_major: float = 0.6,
                  map_location=None):
         super().__init__()
         self.delta_theta_mode = delta_theta_mode
@@ -46,9 +48,19 @@ class FuseNetAgent(nn.Module):
                 self.alpha = nn.Parameter(torch.zeros(self.num_weights), requires_grad=False)
                 logger.info("Fix alpha to all 0")
             else: # Alpha is trainable
-                # self.alpha = nn.Parameter(torch.ones(self.num_weights) * alpha_factor, requires_grad=True)
-                
-                self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
+                logger.info(f"alpha_init, {alpha_init}")
+                logger.info(f"alpha_major, {alpha_major}")
+                if alpha_init == "Uniform" or self.num_weights == 1:
+                    self.alpha = nn.Parameter(torch.ones(self.num_weights) * alpha_factor, requires_grad=True)
+                elif alpha_init == "Randn":
+                    self.alpha = nn.Parameter(torch.randn(self.num_weights) / self.num_weights, requires_grad=True)
+                elif alpha_init == "Major" and self.num_weights > 1:
+                    alpha = [np.log((1-alpha_major)/(self.num_weights-1)) for _ in range(self.num_weights-1)]
+                    alpha.append(np.log(alpha_major))
+                    self.alpha = nn.Parameter(torch.tensor(alpha,dtype=torch.float), requires_grad=True)
+                    logger.info(self.alpha)
+                elif alpha_init not in ["Uniform", "Randn", "Major"]:
+                    raise NotImplementedError
                 self.alpha_scale = nn.Parameter(torch.ones(1), requires_grad=True)
                 logger.info("Train alpha")
             if not use_alpha_scale or fix_alpha:

@@ -140,6 +140,10 @@ class Args:
     """whether to reset actor"""
     global_alpha: bool = True # True or False
     """whether to use global alpha for whole agent"""
+    alpha_init: str = "Randn" # "Randn" "Major" "Uniform"
+    """how to init alpha in FuseNet"""
+    alpha_major: float = 0.6 
+    """init major""" # Major alpha init, theta_{i-1} will be init to log(major) + C, others will be uniform
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -179,18 +183,7 @@ if __name__ == "__main__":
     ao_exist = False # has alpha_optimizer if True
     
     logger.info(f"Run's name: {run_name}")
-    # if False:
-    #     import wandb
-    #     wandb.init(
-    #         project=args.wandb_project_name,
-    #         entity=args.wandb_entity,
-    #         sync_tensorboard=True,
-    #         config=vars(args),
-    #         name=run_name,
-    #         monitor_gym=True,
-    #         save_code=True,
-    #         mode="offline",
-    #     )
+
     logs = {"global_step": [0], "episodic_return": [0]}
     # logger.info(f"Tensorboard writing to runs/{args.tag}/{run_name}")
     writer = SummaryWriter(f"runs/{args.tag}/{run_name}")
@@ -226,7 +219,7 @@ if __name__ == "__main__":
     elif args.method_type == "Finetune":
         if len(args.prev_units) > 0:
             agent = CnnSimpleAgent.load(
-                args.prev_units[0], envs, load_critic=False, reset_actor=True
+                args.prev_units[0], envs, load_critic=False, reset_actor=False
             ).to(device)
         else:
             agent = CnnSimpleAgent(envs).to(device)
@@ -279,14 +272,16 @@ if __name__ == "__main__":
                              fuse_actor=args.fuse_actor,
                              reset_actor=args.reset_actor,
                              global_alpha=args.global_alpha,
+                             alpha_init=args.alpha_init,
+                             alpha_major=args.alpha_major,
                              map_location=device).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
         
     # print(agent)
-    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad and name != "alpha"]
-    
+    trainable_params = [param for name, param in agent.named_parameters() if param.requires_grad and not "alpha" in name]
+
     # for name, param in agent.named_parameters():
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
@@ -294,7 +289,8 @@ if __name__ == "__main__":
     if args.method_type == "FuseNet" and args.mode > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True
-        alpha_optimizer = optim.Adam([agent.alpha], lr=args.alpha_learning_rate, eps=1e-5)
+        alpha_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" in name]
+        alpha_optimizer = optim.Adam(alpha_params, lr=args.alpha_learning_rate, eps=1e-5)
     # ALGO Logic: Storage setup
     obs = torch.zeros(
         (args.num_steps, args.num_envs) + envs.single_observation_space.shape

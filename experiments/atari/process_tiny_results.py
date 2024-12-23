@@ -30,22 +30,24 @@ SETTINGS = {
 }
 
 METHOD_NAMES = {
-    "baseline": "Baseline",
-    "finetune": "FT",
+    "Baseline": "Baseline",
+    "FinetuneR": "FTR",
+    "Finetune": "FT",
     "FuseNet": "FuseNet",
     # "FuseNetT": "FuseNetT",
     # "FuseNetTAT": "FuseNetTAT",
 }
 
 METHOD_COLORS = {
-    "baseline": "darkgray",
-    "finetune": "tab:blue",
+    "Baseline": "darkgray",
+    "FinetuneR": "tab:blue",
+    "Finetune": "tab:green",
     "FuseNet": "tab:red",
     # "FuseNetT": "tab:green",
     # "FuseNetTAT": "tab:orange",
 }
 
-METHOD_ORDER = ["baseline", "finetune",
+METHOD_ORDER = ["Baseline", "Finetune","FinetuneR",
                 "FuseNet", 
                 ]
 
@@ -185,7 +187,7 @@ def compute_success(
 
 
 def compute_forward_transfer(data):
-    baseline_method = "baseline"
+    baseline_method = "Baseline"
     methods = list(METHOD_NAMES.keys())
 
     ft_data = {}
