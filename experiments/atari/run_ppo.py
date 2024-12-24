@@ -275,6 +275,7 @@ if __name__ == "__main__":
                              alpha_init=args.alpha_init,
                              alpha_major=args.alpha_major,
                              map_location=device).to(device)
+        agent.log_alphas()
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
@@ -521,6 +522,8 @@ if __name__ == "__main__":
                 writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
             writer.add_histogram(tag=name+'_data', values=param.data, global_step=global_step)
 
+    if args.method_type == "FuseNet":
+        agent.log_alphas()
     envs.close()
     writer.close()
     

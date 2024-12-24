@@ -172,3 +172,12 @@ class FuseNetAgent(nn.Module):
         
         logger.info("merge encoder's weight")
         self.network.merge_weight()
+
+    def log_alphas(self):
+        if self.alpha is not None:
+            if self.fuse_actor:
+                logger.info("Actor's alphas")
+                self.actor.log_alphas()
+            if self.fuse_encoder:
+                logger.info("Encoder's alphas")
+                self.network.log_alphas()

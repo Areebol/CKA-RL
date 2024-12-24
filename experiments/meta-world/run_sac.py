@@ -14,14 +14,14 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent
 from tasks import get_task, get_task_name
 from stable_baselines3.common.buffers import ReplayBuffer
 
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -80,6 +80,8 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
+    tag: str = "Debug"
+    """experiment tag"""
 
 
 def make_env(task_id):
@@ -191,19 +193,8 @@ if __name__ == "__main__":
     args = tyro.cli(Args)
     run_name = f"task_{args.task_id}__{args.model_type}__{args.exp_name}__{args.seed}"
     print(f"\n*** Run name: {run_name} ***\n")
-    if args.track:
-        import wandb
 
-        wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
-            sync_tensorboard=True,
-            config=vars(args),
-            name=run_name,
-            monitor_gym=True,
-            save_code=True,
-        )
-    writer = SummaryWriter(f"runs/{run_name}")
+    writer = SummaryWriter(f"runs/{args.tag}/{run_name}")
     writer.add_text(
         "hyperparameters",
         "|param|value|\n|-|-|\n%s"
@@ -275,6 +266,17 @@ if __name__ == "__main__":
             act_dim=act_dim,
             prev_paths=args.prev_units,
             map_location=device,
+        ).to(device)
+    elif args.model_type == "fusenet":
+        if len(args.prev_units) > 0:
+            base_dir = args.prev_units[0]
+        else:
+            base_dir = None
+        model = FuseNetAgent(
+            base_dir = base_dir,
+            obs_dim=obs_dim,
+            act_dim=act_dim,
+            prevs_paths=args.prev_units,
         ).to(device)
 
     actor = Actor(envs, model).to(device)
@@ -456,10 +458,10 @@ if __name__ == "__main__":
                         "losses/alpha_loss", alpha_loss.item(), global_step
                     )
 
-    [
-        eval_agent(actor, envs.envs[i], args.num_evals, global_step, writer, device)
-        for i in range(envs.num_envs)
-    ]
+    # [
+    #     eval_agent(actor, envs.envs[i], args.num_evals, global_step, writer, device)
+    #     for i in range(envs.num_envs)
+    # ]
 
     envs.close()
     writer.close()

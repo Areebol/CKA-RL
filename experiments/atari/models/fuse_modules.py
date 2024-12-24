@@ -318,6 +318,11 @@ class FuseEncoder(nn.Module):
     def merge_weight(self):
         for i in self.fuse_layers:
             self.network[i].merge_weight()
+                
+    def log_alphas(self):
+        for i in self.fuse_layers:
+            normalized_alpha = F.softmax(self.network[i].alpha * self.network[i].alpha_scale, dim=0)
+            logger.info(f"Layer {i} alpha: {normalized_alpha}")
 
 class FuseActor(nn.Module):
     def __init__(self, hidden_dim=512, n_actions=0, layer_init=lambda x, **kwargs: x,
@@ -394,6 +399,11 @@ class FuseActor(nn.Module):
     def merge_weight(self):
         for i in self.fuse_layers:
             self.network[i].merge_weight()
+            
+    def log_alphas(self):
+        for i in self.fuse_layers:
+            normalized_alpha = F.softmax(self.network[i].alpha * self.network[i].alpha_scale, dim=0)
+            logger.info(f"Layer {i} alpha: {normalized_alpha}")
 
 class Actor(nn.Module):
     def __init__(self, hidden_dim=512, n_actions=0, layer_init=lambda x, **kwargs: x):
