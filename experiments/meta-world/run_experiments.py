@@ -27,6 +27,8 @@ def parse_args():
     parser.add_argument("--start-mode", type=int, default=0)
     parser.add_argument("--tag", type=str, default="Debug")
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--fuse_shared", action="store_true")
+    parser.add_argument("--fuse_heads", action="store_true")
     return parser.parse_args()
 
 
@@ -47,6 +49,14 @@ run_name = (
 first_idx = modes.index(start_mode)
 for i, task_id in enumerate(modes[first_idx:]):
     params = f"--model-type={args.algorithm} --task-id={task_id} --seed={args.seed} --tag={args.tag}"
+    if args.fuse_shared:
+        params += " --fuse-shared" 
+    else:
+        params += " --no-fuse-shared"
+    if args.fuse_heads:
+        params += " --fuse-heads" 
+    else:
+        params += " --no-fuse-heads"
     if args.debug:
         params += " --total-timesteps=1000"
     params += f" --save-dir=agents"

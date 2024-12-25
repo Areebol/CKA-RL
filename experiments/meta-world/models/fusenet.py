@@ -7,10 +7,12 @@ from loguru import logger
 import numpy as np
 
 class FuseNetAgent(nn.Module):
-    def __init__(self, obs_dim, act_dim, 
+    def __init__(self, 
+                 obs_dim, 
+                 act_dim, 
                  base_dir, 
                  prevs_paths, 
-                 delta_theta_mode = "TAT", 
+                 delta_theta_mode = "T", 
                  global_alpha = True, 
                  alpha_init = "Randn", 
                  alpha_major = 0.6, 
@@ -26,6 +28,8 @@ class FuseNetAgent(nn.Module):
         self.act_dim = act_dim
         self.obs_dim = obs_dim
         self.num_weights = len(prevs_paths)
+        self.fuse_shared = fuse_shared
+        self.fuse_heads = fuse_heads
 
         assert(fuse_heads or fuse_shared)
        # Alpha Setting
@@ -55,24 +59,29 @@ class FuseNetAgent(nn.Module):
         else:
             self.alpha = None
             self.alpha_scale = None
-            
-        self.fc = FuseShared(input_dim=obs_dim, alpha=self.alpha, alpha_scale=self.alpha_scale, num_weights=self.num_weights)
+        if self.fuse_shared:
+            self.fc = FuseShared(input_dim=obs_dim, alpha=self.alpha, alpha_scale=self.alpha_scale, num_weights=self.num_weights)
+        else:
+            self.fc = shared(input_dim=obs_dim)
 
         self.reset_heads()
         self.set_base_and_vectors(base_dir, prevs_paths)
 
     def reset_heads(self):
         # will be created when calling `reset_heads`
-        # self.fc_mean = nn.Linear(256, self.act_dim)
-        # self.fc_logstd = nn.Linear(256, self.act_dim)
-        self.fc_mean = FuseLinear(256, 
-                                  self.act_dim, alpha=self.alpha, 
-                                  alpha_scale=self.alpha_scale, 
-                                  num_weights=self.num_weights)
-        self.fc_logstd = FuseLinear(256, 
+        if self.fuse_heads:
+            self.fc_mean = FuseLinear(256, 
                                     self.act_dim, alpha=self.alpha, 
                                     alpha_scale=self.alpha_scale, 
                                     num_weights=self.num_weights)
+            self.fc_logstd = FuseLinear(256, 
+                                        self.act_dim, alpha=self.alpha, 
+                                        alpha_scale=self.alpha_scale, 
+                                        num_weights=self.num_weights)
+        else:
+            self.fc_mean = nn.Linear(256, self.act_dim)
+            self.fc_logstd = nn.Linear(256, self.act_dim)
+        
 
     def load_base_and_vectors(self, base_dir, vector_dirs, module_name):
         num_weights = 0
@@ -108,8 +117,10 @@ class FuseNetAgent(nn.Module):
             getattr(self, module_name).set_base_and_vectors(base, vectors)
 
     def set_base_and_vectors(self, base_dir, prevs_paths):
-        self.fc.set_base_and_vectors(base_dir, prevs_paths)
-        self.heads_set_base_and_vectors(base_dir, prevs_paths)
+        if self.fuse_shared:
+            self.fc.set_base_and_vectors(base_dir, prevs_paths)
+        if self.fuse_heads:
+            self.heads_set_base_and_vectors(base_dir, prevs_paths)
 
     def forward(self, x):
         x = self.fc(x)
@@ -133,6 +144,8 @@ class FuseNetAgent(nn.Module):
         return model
 
     def merge_weight(self):
-        self.fc.merge_weight()
-        self.fc_mean.merge_weight()
-        self.fc_logstd.merge_weight()
+        if self.fuse_shared:
+            self.fc.merge_weight()
+        if self.fuse_heads:
+            self.fc_mean.merge_weight()
+            self.fc_logstd.merge_weight()

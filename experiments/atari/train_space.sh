@@ -13,7 +13,7 @@ STEPS=1400000
 #                             --fuse_actor \
 #                             --tag "FuseActorOnlyTRandn2.5e-1" \
 # python run_experiments.py --env $ENV  --method_type Baseline  --total_timesteps $STEPS $TRAIN_MODES --seed $SEED
-python run_experiments.py --env $ENV  --method_type CompoNet  --total_timesteps $STEPS $TRAIN_MODES --seed $SEED
+# python run_experiments.py --env $ENV  --method_type CompoNet  --total_timesteps $STEPS $TRAIN_MODES --seed $SEED
                             # --debug
 # python run_experiments.py --env $ENV  --method_type PackNet   $TRAIN_MODES --seed $SEED
 # python run_experiments.py --env $ENV  --method_type ProgNet   $TRAIN_MODES --seed $SEED

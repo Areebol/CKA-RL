@@ -82,6 +82,10 @@ class Args:
     """automatic tuning of the entropy coefficient"""
     tag: str = "Debug"
     """experiment tag"""
+    fuse_shared: bool = True
+    """fuse shared"""
+    fuse_heads: bool = True
+    """fuse heads"""
 
 
 def make_env(task_id):
@@ -277,6 +281,8 @@ if __name__ == "__main__":
             obs_dim=obs_dim,
             act_dim=act_dim,
             prevs_paths=args.prev_units,
+            fuse_shared=args.fuse_shared,
+            fuse_heads=args.fuse_heads,
         ).to(device)
 
     actor = Actor(envs, model).to(device)
@@ -338,9 +344,9 @@ if __name__ == "__main__":
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         if "final_info" in infos:
             for i, info in enumerate(infos["final_info"]):
-                print(
-                    f"global_step={global_step}, episodic_return={info['episode']['r']}, success={info['success']}"
-                )
+                # print(
+                #     f"global_step={global_step}, episodic_return={info['episode']['r']}, success={info['success']}"
+                # )
                 writer.add_scalar(
                     "charts/episodic_return", info["episode"]["r"], global_step
                 )
@@ -447,7 +453,7 @@ if __name__ == "__main__":
                 writer.add_scalar("losses/qf_loss", qf_loss.item() / 2.0, global_step)
                 writer.add_scalar("losses/actor_loss", actor_loss.item(), global_step)
                 writer.add_scalar("losses/alpha", alpha, global_step)
-                print("SPS:", int(global_step / (time.time() - start_time)))
+                # print("SPS:", int(global_step / (time.time() - start_time)))
                 writer.add_scalar(
                     "charts/SPS",
                     int(global_step / (time.time() - start_time)),
@@ -458,10 +464,10 @@ if __name__ == "__main__":
                         "losses/alpha_loss", alpha_loss.item(), global_step
                     )
 
-    # [
-    #     eval_agent(actor, envs.envs[i], args.num_evals, global_step, writer, device)
-    #     for i in range(envs.num_envs)
-    # ]
+    [
+        eval_agent(actor, envs.envs[i], args.num_evals, global_step, writer, device)
+        for i in range(envs.num_envs)
+    ]
 
     envs.close()
     writer.close()
