@@ -63,6 +63,11 @@ class FuseNetAgent(nn.Module):
             self.fc = FuseShared(input_dim=obs_dim, alpha=self.alpha, alpha_scale=self.alpha_scale, num_weights=self.num_weights)
         else:
             self.fc = shared(input_dim=obs_dim)
+            if len(prevs_paths) > 0:
+                logger.info(f"Loading latest shared weight {prevs_paths[-1]}")
+                state_dict = torch.load(f"{prevs_paths[-1]}/model.pt").state_dict()
+                fc_state_dict = {key.split("fc.")[1]:value for key,value in state_dict.items() if "fc." in key}
+                self.fc.load_state_dict(fc_state_dict)
 
         self.reset_heads()
         self.set_base_and_vectors(base_dir, prevs_paths)
