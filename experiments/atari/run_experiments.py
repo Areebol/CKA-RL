@@ -12,6 +12,7 @@ method_choices = ["Baseline",         # F1
                   "ProgNet",          # ProgNet
                   "TvNet",            # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   "FuseNet",          # FuseNet
+                  "FuseNetwMerge",    # FuseNet with merge previous domain vectors
                   ]
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -35,6 +36,7 @@ def parse_args():
     parser.add_argument("--global_alpha", action='store_true') # wehter to use global alpha for whole agent
     parser.add_argument("--alpha_init", type=str, default="Randn") 
     parser.add_argument("--alpha_major", type=float, default=0.6) 
+    parser.add_argument("--pool_size", type=int, default=4) 
     
     return parser.parse_args()
 
@@ -72,6 +74,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     params += (f" --global_alpha" if args.global_alpha else f" --no-global_alpha")
     params += f" --alpha_init={args.alpha_init}" 
     params += f" --alpha_major={args.alpha_major}" 
+    params += f" --pool_size={args.pool_size}" 
     
     if args.alpha_factor is not None:
         params += f" --alpha_factor={args.alpha_factor}"
@@ -94,7 +97,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.method_type in ["CompoNet", "ProgNet", "TvNet", "FuseNet"]:
+        if args.method_type in ["CompoNet", "ProgNet", "TvNet", "FuseNet", "FuseNetwMerge"]:
             params += " --prev-units"
             logger.info(f"Method {args.method_type} need prevs-units, adding prevs-units")
             for i in modes[: modes.index(task_id)]:

@@ -5,3 +5,4 @@ from .progressive_net import ProgressiveNetAgent
 from .packnet import PackNetAgent
 from .cnn_tvnet import CnnTvNetAgent
 from .fusenet import FuseNetAgent
+from .fusenet_merge import FuseNetwMergeAgent

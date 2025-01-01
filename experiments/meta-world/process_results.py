@@ -16,6 +16,7 @@ METHOD_NAMES = {
     "componet": "CompoNet",
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
+    "fusenet": "FuseNet",
 }
 
 
@@ -346,9 +347,9 @@ if __name__ == "__main__":
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet"]
-    method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", "fusenet"]
+    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "FuseNet"]
+    method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
     # Extract data from tensorboard results to an actually useful CSV

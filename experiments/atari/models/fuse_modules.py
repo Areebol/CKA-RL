@@ -126,6 +126,27 @@ class FuseLinear(nn.Module):
             self.weights.data.copy_(vectors['weight'])
             self.biaes.data.copy_(vectors['bias'])
 
+    def get_vectors(self, base = None):
+        if base is None:
+            base_weight = torch.zeros_like(self.weight)
+            base_bias = torch.zeros_like(self.bias)
+        else:
+            base_weight = base['weight']
+            base_bias = base['bias']
+        new_weight = self.weight - base_weight
+        new_bias = self.bias - base_bias
+        
+        if self.weights is not None:
+            weights = torch.cat([new_weight.unsqueeze(0), self.weights], dim=0)
+        else:
+            weights = new_weight.unsqueeze(0)
+        if self.biaes is not None:
+            biaes = torch.cat([new_bias.unsqueeze(0), self.biaes], dim=0)
+        else:
+            biaes = new_bias.unsqueeze(0)
+            
+        return {"weight":weights, "bias":biaes}, weights.shape[0]
+
 class FuseConv2d(_ConvNd):
     def __init__(
         self,
@@ -255,10 +276,10 @@ class FuseEncoder(nn.Module):
                 nn.ReLU(),
             )
         else:
-            logger.debug("FuseEncoder using local alphas")
+            # logger.debug("FuseEncoder using local alphas")
             self.alphas = ParameterList([Parameter(alpha.clone().detach().requires_grad_(alpha.requires_grad)) for _ in range(len(self.fuse_layers))])
             self.alpha_scales = ParameterList([Parameter(alpha_scale.clone().detach().requires_grad_(alpha_scale.requires_grad)) for _ in range(len(self.fuse_layers))])
-            logger.debug(f"{self.alphas}")
+            # logger.debug(f"{self.alphas}")
             self.network = nn.Sequential(
                 layer_init(FuseConv2d(4, 32, 8, stride=4, alpha=self.alphas[0], alpha_scale=self.alpha_scales[0],num_weights=num_weights)), # 0
                 nn.ReLU(),
@@ -404,6 +425,23 @@ class FuseActor(nn.Module):
         for i in self.fuse_layers:
             normalized_alpha = F.softmax(self.network[i].alpha * self.network[i].alpha_scale, dim=0)
             logger.info(f"Layer {i} alpha: {normalized_alpha}")
+            
+    def get_vectors(self, base):
+        vectors = []
+        for idx, i in enumerate(self.fuse_layers):
+            i_vectors, num_vectors = self.network[i].get_vectors(base=base[idx])
+            vectors.append(i_vectors)
+        return vectors, num_vectors
+    
+    def get_base(self):
+        base = []
+        for i in self.fuse_layers:
+            base.append({"weight":self.network[i].weight.data,"bias":self.network[i].bias.data})
+        return base
+
+    def setup_fuse_layers(self, base, vectors):
+        for idx,i in enumerate(self.fuse_layers):
+            self.network[i].set_base_and_vectors(base[idx],vectors[idx])
 
 class Actor(nn.Module):
     def __init__(self, hidden_dim=512, n_actions=0, layer_init=lambda x, **kwargs: x):

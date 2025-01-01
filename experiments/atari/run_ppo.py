@@ -33,6 +33,7 @@ from models import (
     PackNetAgent,
     CnnTvNetAgent, 
     FuseNetAgent,
+    FuseNetwMergeAgent,
 )
 
 
@@ -144,6 +145,8 @@ class Args:
     """how to init alpha in FuseNet"""
     alpha_major: float = 0.6 
     """init major""" # Major alpha init, theta_{i-1} will be init to log(major) + C, others will be uniform
+    pool_size: int = 3
+    """pool size for FuseNetwMerge"""
 
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
@@ -274,6 +277,24 @@ if __name__ == "__main__":
                              global_alpha=args.global_alpha,
                              alpha_init=args.alpha_init,
                              alpha_major=args.alpha_major,
+                             map_location=device).to(device)
+        agent.log_alphas()
+    elif args.method_type == "FuseNetwMerge":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        latest_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
+        agent = FuseNetwMergeAgent(envs, 
+                             base_dir=base_dir, 
+                             latest_dir=latest_dir,
+                             alpha_factor=args.alpha_factor,
+                             fix_alpha=args.fix_alpha,
+                             delta_theta_mode=args.delta_theta_mode,
+                             fuse_encoder=args.fuse_encoder,
+                             fuse_actor=args.fuse_actor,
+                             reset_actor=args.reset_actor,
+                             global_alpha=args.global_alpha,
+                             alpha_init=args.alpha_init,
+                             alpha_major=args.alpha_major,
+                             pool_size=args.pool_size,
                              map_location=device).to(device)
         agent.log_alphas()
     else:

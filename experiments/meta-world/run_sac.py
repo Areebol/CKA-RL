@@ -225,6 +225,8 @@ if __name__ == "__main__":
     # select the model to use as the agent
     obs_dim = np.array(envs.single_observation_space.shape).prod()
     act_dim = np.prod(envs.single_action_space.shape)
+    print(obs_dim)
+    print(act_dim)
     print(f"*** Loading model `{args.model_type}` ***")
     if args.model_type in ["finetune", "componet"]:
         assert (
