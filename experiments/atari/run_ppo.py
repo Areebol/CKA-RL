@@ -308,7 +308,7 @@ if __name__ == "__main__":
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
-    if args.method_type == "FuseNet" and args.mode > 1:
+    if ("FuseNet" in args.method_type) and args.mode > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True
         alpha_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" in name]

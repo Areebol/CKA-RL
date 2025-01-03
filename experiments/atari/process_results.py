@@ -35,7 +35,8 @@ METHOD_NAMES = {
     "CompoNet": "CompoNet",
     "ProgNet": "ProgressiveNet",
     "PackNet": "PackNet",
-    "FuseNet": "FuseNet"
+    "FuseNet": "FuseNet",
+    "FuseNetwMerge": "FuseNetwMerge",
 }
 
 METHOD_COLORS = {
@@ -44,13 +45,14 @@ METHOD_COLORS = {
     "CompoNet": "tab:green",
     "ProgNet": "tab:grey",
     "PackNet": "tab:grey",
-    "FuseNet": "tab:red"
+    "FuseNet": "tab:red",
+    "FuseNetwMerge": "tab:red",
 }
 
 METHOD_ORDER = ["Baseline", "CompoNet", 
                 "Finetune", "ProgNet", 
                 "PackNet",  
-                "FuseNet"
+                "FuseNet", "FuseNetwMerge"
                 ]
 # METHOD_ORDER = ["baseline", 
 #                 "FuseNet"
