@@ -18,6 +18,7 @@ def parse_args():
             "prognet",
             "packnet",
             "fusenet",
+            "fusenet_merge",
         ],
         required=True,
     )
@@ -29,21 +30,22 @@ def parse_args():
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--fuse_shared", action="store_true")
     parser.add_argument("--fuse_heads", action="store_true")
+    parser.add_argument("--pool_size", default=4)
     return parser.parse_args()
 
 
 args = parse_args()
 
 modes = list(range(20)) if args.algorithm != "simple" else list(range(10))
-
+# args.start_mode = 3
 # NOTE: If the algoritm is not `simple`, it always should start from the second task
-if args.algorithm not in ["simple", "packnet", "prognet","fusenet"] and args.start_mode == 0:
+if args.algorithm not in ["simple", "packnet", "prognet","fusenet", "fusenet_merge"] and args.start_mode == 0:
     start_mode = 1
 else:
     start_mode = args.start_mode
 
 run_name = (
-    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'fusenet'] else 'simple'}__run_sac__{args.seed}"
+    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'fusenet', 'fusenet_merge'] else 'simple'}__run_sac__{args.seed}"
 )
 
 first_idx = modes.index(start_mode)
@@ -58,18 +60,20 @@ for i, task_id in enumerate(modes[first_idx:]):
     else:
         params += " --no-fuse-heads"
     if args.debug:
-        params += " --total-timesteps=1000"
-    params += f" --save-dir=agents"
+        params += " --total-timesteps=1"
+    save_dir = f"agents/{args.tag}"
+    params += f" --save-dir={save_dir}"
+    params += f" --pool_size={args.pool_size}"
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.algorithm in ["componet", "prognet", "fusenet"]:
+        if args.algorithm in ["componet", "prognet", "fusenet", "fusenet_merge"]:
             params += " --prev-units"
             for i in modes[: modes.index(task_id)]:
-                params += f" agents/{run_name(i)}"
+                params += f" {save_dir}/{run_name(i)}"
         # single previous module
         elif args.algorithm in ["finetune", "packnet"]:
-            params += f" --prev-units agents/{run_name(task_id-1)}"
+            params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
 
     # Launch experiment
     cmd = f"python3 run_sac.py {params}"

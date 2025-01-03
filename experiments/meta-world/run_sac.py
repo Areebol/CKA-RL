@@ -14,14 +14,14 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent
 from tasks import get_task, get_task_name
 from stable_baselines3.common.buffers import ReplayBuffer
 
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -86,6 +86,8 @@ class Args:
     """fuse shared"""
     fuse_heads: bool = True
     """fuse heads"""
+    pool_size: int = 4
+    """pool size"""
 
 
 def make_env(task_id):
@@ -286,6 +288,18 @@ if __name__ == "__main__":
             fuse_shared=args.fuse_shared,
             fuse_heads=args.fuse_heads,
         ).to(device)
+    elif args.model_type == "fusenet_merge":
+        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
+        latest_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
+        model = FuseMergeNetAgent(
+            base_dir=base_dir,
+            latest_dir=latest_dir,
+            obs_dim=obs_dim,
+            act_dim=act_dim,
+            fuse_shared=args.fuse_shared,
+            fuse_heads=args.fuse_heads,
+            pool_size=args.pool_size,
+        )
 
     actor = Actor(envs, model).to(device)
     qf1 = SoftQNetwork(envs).to(device)

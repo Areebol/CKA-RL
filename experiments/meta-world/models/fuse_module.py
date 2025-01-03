@@ -126,6 +126,29 @@ class FuseLinear(nn.Module):
             self.weights.data.copy_(vectors['weight'])
             self.biaes.data.copy_(vectors['bias'])
 
+    def get_vectors(self, base = None):
+        if base is None:
+            base_weight = torch.zeros_like(self.weight)
+            base_bias = torch.zeros_like(self.bias)
+        else:
+            base_weight = base['weight']
+            base_bias = base['bias']
+        new_weight = self.weight - base_weight
+        new_bias = self.bias - base_bias
+        
+        if self.weights is not None:
+            weights = torch.cat([new_weight.unsqueeze(0), self.weights], dim=0)
+        else:
+            weights = new_weight.unsqueeze(0)
+        if self.biaes is not None:
+            biaes = torch.cat([new_bias.unsqueeze(0), self.biaes], dim=0)
+        else:
+            biaes = new_bias.unsqueeze(0)
+            
+        return {"weight":weights, "bias":biaes}, weights.shape[0]
+    
+    def get_base(self):
+        return {"weight":self.weight, "bias":self.bias}
 
 class FuseShared(nn.Module):
     def __init__(self, input_dim, 
