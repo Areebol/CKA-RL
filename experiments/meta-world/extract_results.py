@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import os, sys
 import argparse
-from tabulate import tabulate
 
 
 METHOD_NAMES = {
@@ -16,24 +15,17 @@ METHOD_NAMES = {
     "componet": "CompoNet",
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
-    "fusenet_merge": "FuseNet",
+    "fusenet": "FuseNet",
 }
 
 
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runs-dir", default="runs_all", type=str,
+    parser.add_argument("--tag", default="Debug", type=str,
         help="directory where the tensorboard data is stored")
     parser.add_argument("--no-cache", default=False, action="store_true",
         help="wheter to disable the cache option. If not provided and `--save-dir` exists, skips processing tensorboard files")
-    parser.add_argument("--save-csv", default="data/agg_results.csv", type=str,
-        help="filename of the CSV to store the processed tensorboard results. Once processed, can be used as cache.")
-    parser.add_argument("--tag", default="Debug", type=str)
-    parser.add_argument("--smoothing-window", type=int, default=100)
-    parser.add_argument("--eval-csv", type=str, default="data/eval_results.csv",
-        help="path to the CSV where the results of evaluations are stored. If the file doesn't exist, forgetting is not computed.")
-    parser.add_argument("--no-plots", default=False, action="store_true")
     # fmt: on
     return parser.parse_args()
 
@@ -213,7 +205,7 @@ def compute_performance(df, methods, col="charts/test_success"):
         for j, m in enumerate(methods):
             task_id = i if m != "simple" else i % 10
 
-            method = "simple" if task_id == 0 and m in ["componet", "finetune", "fusenet_merge"] else m
+            method = "simple" if task_id == 0 and m in ["componet", "finetune", "fusenet"] else m
 
             s = df[
                 (df["task_id"] == task_id)
@@ -340,7 +332,7 @@ def process_eval(df, perf_data):
 
 if __name__ == "__main__":
     sys.path.append("../../")
-    from utils import style
+    # from utils import style
 
     args = parse_args()
 
@@ -348,194 +340,42 @@ if __name__ == "__main__":
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet", "fusenet_merge"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "fusenet_merge"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", "fusenet"]
+    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "FuseNet"]
     method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
     # Extract data from tensorboard results to an actually useful CSV
     #
-    args.save_csv = f"data/{args.tag}/agg_results.csv"
-    exists = os.path.exists(args.save_csv)
-    if args.no_cache or (not exists and not args.no_cache):
-        dfs = []
-        for path in tqdm(list(pathlib.Path(args.runs_dir).rglob("*events.out*"))):
-            # print("*** Processing ", path)
-            res = parse_tensorboard(str(path), [scalar], [final_success])
-            if res is not None:
-                dic, md = res
-            else:
-                print("No data. Skipping...")
-                continue
+    runs_dir = f"./runs/{args.tag}"
+    save_csv = f"./data/{args.tag}/fusenet.csv"
+    exists = os.path.exists(save_csv)
+    # if args.no_cache or (not exists and not args.no_cache):
+    dfs = []
+    for path in tqdm(list(pathlib.Path(runs_dir).rglob("*events.out*"))):
+        # print("*** Processing ", path)
+        res = parse_tensorboard(str(path), [scalar], [final_success])
+        if res is not None:
+            dic, md = res
+        else:
+            print("No data. Skipping...")
+            continue
 
-            df = dic[scalar]
-            df = df[["step", "value"]]
-            df["seed"] = md["seed"]
-            df["task_id"] = md["task_id"]
-            df["model_type"] = md["model_type"]
+        df = dic[scalar]
+        df = df[["step", "value"]]
+        df["seed"] = md["seed"]
+        df["task_id"] = md["task_id"]
+        df["model_type"] = md["model_type"]
 
-            if final_success in md:
-                df[final_success] = md[final_success]
+        if final_success in md:
+            df[final_success] = md[final_success]
 
-            dfs.append(df)
-        df = pd.concat(dfs)
-        df.to_csv(args.save_csv, index=False)
-    else:
-        print(f"\n\nReloading cache data from: {args.save_csv}")
-        df = pd.read_csv(args.save_csv)
+        dfs.append(df)
+    df = pd.concat(dfs)
+    os.makedirs(os.path.dirname(save_csv), exist_ok=True)
+    df.to_csv(save_csv, index=False)
 
-    #
-    # Compute performance and forward transfer
-    #
-    count(df, methods)
-
-    data_perf = compute_performance(df, methods)
-
-    if os.path.exists(args.eval_csv):
-        eval_perf, eval_forg = process_eval(pd.read_csv(args.eval_csv), data_perf)
-
-    ft_data = compute_forward_transfer(df, methods, args.smoothing_window)
-
-    #
-    # Save summary CSV
-    #
-    fname = f"./data/{args.tag}/summary_data_mw.csv"
-    with open(fname, "w") as f:
-        f.write("env,method,task id,perf,perf std,ft,forg,forg std\n")
-        for task_id in range(20):
-            for method in df["model_type"].unique():
-                if method in ["finetune", "simple"]:
-                    perf = eval_perf[method]["avgs"][task_id % 10]
-                    perf_std = eval_perf[method]["stds"][task_id % 10]
-                    forg, forg_std = eval_forg[method][task_id % 10]
-                else:
-                    perf, perf_std = data_perf[method][task_id]
-                    forg, forg_std = 0, 0
-
-                if method == "simple" or task_id == 0:
-                    ft = 0
-                else:
-                    ft = ft_data[method][task_id - 1]
-                f.write(
-                    f"metaworld,{METHOD_NAMES[method]},{task_id},{perf},{perf_std},{ft},{forg},{forg_std}\n"
-                )
-    print(f"\n*** A summary of the results has been saved to `{fname}` ***\n")
-
-    if args.no_plots:
-        quit()
-
-    #
-    # Plotting
-    #
-    assert len(methods) == len(
-        method_colors
-    ), "Number of colors must match number of methods"
-
-    fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 8))
-
-    #
-    # Plot all the method together
-    #
-    ax = axes[0]
-    for env in range(20):
-        # print(f"* task {env}:")
-        for method, color in zip(methods, method_colors):
-            task_id = env if method != "simple" else env % 10
-            s = df[(df["model_type"] == method) & (df["task_id"] == task_id)]
-
-            offset = env * total_timesteps
-
-            # this happens if an algorithm is not run for a task
-            if s.empty:
-                ax.plot([offset], [0], c="white")
-                continue
-
-            x, y, std = smooth_avg(
-                s, xkey="step", ykey="value", w=args.smoothing_window
-            )
-
-            ax.plot(x + offset, y, c=color, linewidth=0.8)
-            ax.set_ylabel("Success")
-
-    ax.set_xticks(
-        np.arange(20) * 1e6, [f"{i}" for i in range(20)], fontsize=7, color="dimgray"
-    )
-    ax.vlines(
-        x=np.arange(20) * 1e6,
-        ymin=0.0,
-        ymax=1,
-        colors="tab:gray",
-        alpha=0.3,
-        linestyles="dashed",
-        linewidths=0.7,
-    )
-
-    style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    #
-    # Plot all methods separately
-    #
-
-    for i, (method, color) in enumerate(zip(methods, method_colors)):
-        ax = axes[i + 1]
-        ax.vlines(
-            x=np.arange(20) * 1e6,
-            ymin=0.0,
-            ymax=1,
-            colors="tab:gray",
-            alpha=0.3,
-            linestyles="dashed",
-            linewidths=0.7,
-        )
-        ax.set_xticks(
-            np.arange(20) * 1e6,
-            [f"{i}" for i in range(20)],
-            fontsize=7,
-            color="dimgray",
-        )
-        ax.set_ylabel(f"{fancy_names[i]}\n\nSuccess")
-        for env in range(20):
-            task_id = env if method != "simple" else env % 10
-
-            m = "simple" if env == 0 and method in ["componet", "finetune"] else method
-            s = df[(df["model_type"] == m) & (df["task_id"] == task_id)]
-
-            offset = env * total_timesteps
-
-            # this happens if an algorithm is not run for a task
-            if s.empty:
-                if method == "simple":
-                    print(f"Empty in simple: task={task_id}")
-                ax.plot([offset], [0], c="white")
-                continue
-
-            x, y, std = smooth_avg(
-                s, xkey="step", ykey="value", w=args.smoothing_window
-            )
-            ax.plot(x + offset, y, c=color, linewidth=0.8)
-
-            ax.fill_between(
-                x + offset,
-                np.maximum(y - std, 0),
-                np.minimum(y + std, 1.0),
-                alpha=0.3,
-                color=color,
-            )
-
-        style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    # only applied to the last `ax` (plot)
-    ax.set_xlabel("Task ID")
-
-    lines = [Line2D([0], [0], color=c) for c in method_colors]
-    fig.legend(
-        lines,
-        fancy_names,
-        fancybox=False,
-        frameon=False,
-        loc="outside lower center",
-        ncols=len(methods),
-    )
-
-    plt.savefig(f"./data/{args.tag}/success_curves_metaworld.pdf", pad_inches=0, bbox_inches="tight")
-    plt.show()
+    a = pd.read_csv('./data/agg_results.csv')
+    b = pd.read_csv(f'./data/{args.tag}/fusenet.csv')
+    c = pd.concat([a, b])
+    c.to_csv(f'./data/{args.tag}/agg_results.csv')
