@@ -10,15 +10,6 @@ import argparse
 from tabulate import tabulate
 
 
-METHOD_NAMES = {
-    "simple": "Baseline",
-    "finetune": "FT",
-    "componet": "CompoNet",
-    "prognet": "ProgressiveNet",
-    "packnet": "PackNet",
-    "fusenet_merge": "FuseNet",
-}
-
 
 def parse_args():
     # fmt: off
@@ -34,6 +25,7 @@ def parse_args():
     parser.add_argument("--eval-csv", type=str, default="data/eval_results.csv",
         help="path to the CSV where the results of evaluations are stored. If the file doesn't exist, forgetting is not computed.")
     parser.add_argument("--no-plots", default=False, action="store_true")
+    parser.add_argument("--fuse-type", default="fusenet", type=str,choices=["fusenet", "fusenet_merge"])
     # fmt: on
     return parser.parse_args()
 
@@ -203,7 +195,7 @@ def compute_forward_transfer(df, methods, smoothing_window):
     return results
 
 
-def compute_performance(df, methods, col="charts/test_success"):
+def compute_performance(df, methods, col="charts/test_success", fuse_type="fusenet"):
     table = []
     avgs = [[] for _ in range(len(methods))]
     results = {}
@@ -213,7 +205,7 @@ def compute_performance(df, methods, col="charts/test_success"):
         for j, m in enumerate(methods):
             task_id = i if m != "simple" else i % 10
 
-            method = "simple" if task_id == 0 and m in ["componet", "finetune", "fusenet_merge"] else m
+            method = "simple" if task_id == 0 and m in ["componet", "finetune", fuse_type] else m
 
             s = df[
                 (df["task_id"] == task_id)
@@ -343,13 +335,20 @@ if __name__ == "__main__":
     from utils import style
 
     args = parse_args()
-
+    METHOD_NAMES = {
+        "simple": "Baseline",
+        "finetune": "FT",
+        "componet": "CompoNet",
+        "prognet": "ProgressiveNet",
+        "packnet": "PackNet",
+        args.fuse_type: "FuseNet",
+    }
     # hardcoded settings
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet", "fusenet_merge"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "fusenet_merge"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type]
+    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", args.fuse_type]
     method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
@@ -389,7 +388,7 @@ if __name__ == "__main__":
     #
     count(df, methods)
 
-    data_perf = compute_performance(df, methods)
+    data_perf = compute_performance(df, methods, args.fuse_type)
 
     if os.path.exists(args.eval_csv):
         eval_perf, eval_forg = process_eval(pd.read_csv(args.eval_csv), data_perf)
