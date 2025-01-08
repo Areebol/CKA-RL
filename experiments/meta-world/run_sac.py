@@ -88,6 +88,8 @@ class Args:
     """fuse heads"""
     pool_size: int = 4
     """pool size"""
+    encoder_from_base: bool = False
+    """load encoder from base_dir"""
 
 
 def make_env(task_id):
@@ -299,6 +301,7 @@ if __name__ == "__main__":
             fuse_shared=args.fuse_shared,
             fuse_heads=args.fuse_heads,
             pool_size=args.pool_size,
+            encoder_from_base=args.encoder_from_base,
         )
 
     actor = Actor(envs, model).to(device)

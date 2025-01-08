@@ -20,6 +20,7 @@ class FuseMergeNetAgent(nn.Module):
                  alpha_factor = 1e-3,
                  fix_alpha = False,
                  reset_heads = False,
+                 encoder_from_base = False,
                  use_alpha_scale = True,
                  fuse_shared = True, 
                  fuse_heads = True,):
@@ -42,7 +43,10 @@ class FuseMergeNetAgent(nn.Module):
         
         self.log_alpha()
         
-        if latest_dir is not None:
+        if encoder_from_base and base_dir is not None:
+            logger.info(f"Loading encoder from {base_dir}")
+            self.fc = torch.load(f"{base_dir}/fc.pt")
+        elif latest_dir is not None:
             logger.info(f"Loading latest shared from {latest_dir}")
             # self.fc = shared(input_dim=obs_dim)
             self.fc = torch.load(f"{latest_dir}/fc.pt")

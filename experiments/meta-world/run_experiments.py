@@ -31,6 +31,7 @@ def parse_args():
     parser.add_argument("--fuse_shared", action="store_true")
     parser.add_argument("--fuse_heads", action="store_true")
     parser.add_argument("--pool_size", default=4)
+    parser.add_argument("--encoder_from_base", action="store_true")
     return parser.parse_args()
 
 
@@ -61,6 +62,11 @@ for i, task_id in enumerate(modes[first_idx:]):
         params += " --no-fuse-heads"
     if args.debug:
         params += " --total-timesteps=1"
+    if args.encoder_from_base:
+        params += " --encoder-from-base"
+    else:
+        params += " --no-encoder-from-base"
+    
     save_dir = f"agents/{args.tag}"
     params += f" --save-dir={save_dir}"
     params += f" --pool_size={args.pool_size}"
