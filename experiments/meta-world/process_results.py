@@ -159,7 +159,9 @@ def compute_forward_transfer(df, methods, smoothing_window):
                 x_baseline,
                 y_baseline,
             )
-
+            if task_id == 18 and (name in ["componet"] or "fuse" in name):
+                print(f"Method {name} task {task_id} up: {area_up} down: {area_down}")
+                print(baseline_area_up)
             ft = (area_up - area_down) / baseline_area_up
             table_row.append(round(ft, 2))
 
@@ -229,7 +231,7 @@ def compute_performance(df, methods, col="charts/test_success", fuse_type="fusen
 
         table.append(row)
 
-    avgs = [(round(np.mean(v), 2), round(np.std(v), 2)) for v in avgs]
+    avgs = [(round(np.mean(v), 6), round(np.std(v), 2)) for v in avgs]
     table.append([None] * len(row))
     table.append(["Avg."] + avgs)
 
@@ -496,7 +498,7 @@ if __name__ == "__main__":
         for env in range(20):
             task_id = env if method != "simple" else env % 10
 
-            m = "simple" if env == 0 and method in ["componet", "finetune"] else method
+            m = "simple" if env == 0 and method in ["componet", "finetune", args.fuse_type] else method
             s = df[(df["model_type"] == m) & (df["task_id"] == task_id)]
 
             offset = env * total_timesteps

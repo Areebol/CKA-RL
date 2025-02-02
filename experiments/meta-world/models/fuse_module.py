@@ -148,6 +148,7 @@ class FuseLinear(nn.Module):
         return {"weight":weights, "bias":biaes}, weights.shape[0]
     
     def get_base(self):
+        # return {"weight": self.weight.data, "bias": self.bias.data if self.bias is not None else None}
         return {"weight":self.weight, "bias":self.bias}
 
 class FuseShared(nn.Module):

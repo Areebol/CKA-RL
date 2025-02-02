@@ -538,10 +538,10 @@ if __name__ == "__main__":
         loop.set_postfix(SPS=int(global_step / (time.time() - start_time)),R=logs["episodic_return"][-1])
         
         # log model's weight and grad
-        for name, param in agent.named_parameters():
-            if param.grad is not None:
-                writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
-            writer.add_histogram(tag=name+'_data', values=param.data, global_step=global_step)
+        # for name, param in agent.named_parameters():
+        #     if param.grad is not None:
+        #         writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
+        #     writer.add_histogram(tag=name+'_data', values=param.data, global_step=global_step)
 
     if args.method_type == "FuseNet":
         agent.log_alphas()
