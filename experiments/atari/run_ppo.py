@@ -34,6 +34,7 @@ from models import (
     CnnTvNetAgent, 
     FuseNetAgent,
     FuseNetwMergeAgent,
+    CnnMaskAgent
 )
 
 
@@ -297,6 +298,16 @@ if __name__ == "__main__":
                              pool_size=args.pool_size,
                              map_location=device).to(device)
         agent.log_alphas()
+    elif args.method_type == "MaskNet":
+        logger.info(f"num_task: {args.total_task_num}")
+        logger.info(f"task: {args.mode}")
+        if len(args.prev_units) > 0:
+            logger.info(f"loading from {args.prev_units[0]}")
+            agent = CnnMaskAgent.load(args.prev_units[0], envs, num_tasks=args.total_task_num, load_critic=False, reset_actor=False).to(device)
+            agent.set_task(args.mode, new_task=True)
+        else:
+            agent = CnnMaskAgent(envs, num_tasks=args.total_task_num).to(device)
+            agent.set_task(args.mode, new_task=False)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)

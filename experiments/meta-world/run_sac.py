@@ -90,7 +90,8 @@ class Args:
     """pool size"""
     encoder_from_base: bool = False
     """load encoder from base_dir"""
-
+    select_by_success: int = 0
+    """select by success"""
 
 def make_env(task_id):
     def thunk():

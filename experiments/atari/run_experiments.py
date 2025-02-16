@@ -13,6 +13,7 @@ method_choices = ["Baseline",         # F1
                   "TvNet",            # TV1 Task-Vector-1: Do Task-Vector on Encoder & Actor both
                   "FuseNet",          # FuseNet
                   "FuseNetwMerge",    # FuseNet with merge previous domain vectors
+                  "MaskNet",          # MaskNet
                   ]
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -92,7 +93,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     # method specific CLI arguments
     if args.method_type == "CompoNet":
         params += " --componet-finetune-encoder"
-    if args.method_type == "PackNet":
+    if args.method_type in ["PackNet", "MaskNet"]:
         params += f" --total-task-num={len(modes)}"
 
     if first_idx > 0 or i > 0:
@@ -103,7 +104,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.method_type in ["Finetune", "PackNet"]:
+        elif args.method_type in ["Finetune", "PackNet", "MaskNet"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
             
     # Launch experiment
