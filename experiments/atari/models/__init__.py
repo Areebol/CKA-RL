@@ -7,3 +7,4 @@ from .cnn_tvnet import CnnTvNetAgent
 from .fusenet import FuseNetAgent
 from .fusenet_merge import FuseNetwMergeAgent
 from .masknet import CnnMaskAgent
+from .cbpnet import CnnCbpAgent

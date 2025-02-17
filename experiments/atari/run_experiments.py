@@ -14,6 +14,7 @@ method_choices = ["Baseline",         # F1
                   "FuseNet",          # FuseNet
                   "FuseNetwMerge",    # FuseNet with merge previous domain vectors
                   "MaskNet",          # MaskNet
+                  "CbpNet",           # CbpNet
                   ]
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -104,7 +105,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.method_type in ["Finetune", "PackNet", "MaskNet"]:
+        elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
             
     # Launch experiment

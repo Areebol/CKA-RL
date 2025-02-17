@@ -4,26 +4,20 @@ import torch.nn as nn
 import numpy as np
 from torch.distributions.categorical import Categorical
 from .cnn_encoder import CnnEncoder
-from .mask_modules import MultitaskMaskLinear, set_model_task, NEW_MASK_LINEAR_COMB, consolidate_mask
+from .cbp_modules import CbpActor, GnT
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
-    # torch.nn.init.constant_(layer.bias, bias_const)
+    torch.nn.init.constant_(layer.bias, bias_const)
     return layer
 
 
-class CnnMaskAgent(nn.Module):
-    def __init__(self, envs, num_tasks):
+class CnnCbpAgent(nn.Module):
+    def __init__(self, envs):
         super().__init__()
         self.network = CnnEncoder(hidden_dim=512, layer_init=layer_init)
-        self.actor = nn.Sequential(
-            layer_init(MultitaskMaskLinear(512, 512, \
-                discrete=True, num_tasks=num_tasks, new_mask_type=NEW_MASK_LINEAR_COMB)),
-            nn.ReLU(),
-            layer_init(MultitaskMaskLinear(512, envs.single_action_space.n, \
-                discrete=True, num_tasks=num_tasks, new_mask_type=NEW_MASK_LINEAR_COMB), std=0.01),
-        )
+        self.actor = CbpActor(a_dim=envs.single_action_space.n)
         self.critic = layer_init(nn.Linear(512, 1), std=1)
 
     def get_value(self, x):
@@ -39,22 +33,16 @@ class CnnMaskAgent(nn.Module):
 
     def save(self, dirname):
         os.makedirs(dirname, exist_ok=True)
+        self.actor.remove_hooks()
         torch.save(self.actor, f"{dirname}/actor.pt")
         torch.save(self.network, f"{dirname}/encoder.pt")
         torch.save(self.critic, f"{dirname}/critic.pt")
 
-    def load(dirname, envs, num_tasks, load_critic=True, reset_actor=False, map_location=None):
-        model = CnnMaskAgent(envs, num_tasks)
+    def load(dirname, envs, load_critic=True, reset_actor=False, map_location=None):
+        model = CnnCbpAgent(envs)
         model.network = torch.load(f"{dirname}/encoder.pt", map_location=map_location)
         if not reset_actor:
             model.actor = torch.load(f"{dirname}/actor.pt", map_location=map_location)
         if load_critic:
             model.critic = torch.load(f"{dirname}/critic.pt", map_location=map_location)
         return model
-
-    def set_task(self, task, new_task):
-        set_model_task(self, task, new_task=new_task, verbose=True)
-        
-    def consolidate_mask(self):
-        consolidate_mask(self)
-        

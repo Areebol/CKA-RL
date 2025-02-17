@@ -1,6 +1,6 @@
 SEED=42
 ENV="ALE/SpaceInvaders-v5"
-STEPS=1400000
+STEPS=1000000
 # TRAIN_MODES="--first-mode 4 --last-mode 9"
 # python run_experiments.py   --env $ENV  \
 #                             --method_type FuseNetwMerge   \
@@ -56,8 +56,8 @@ python run_experiments.py   --env $ENV  \
                             --fuse_actor \
                             --tag "Randn2.5e-3PoolSize8" \
 
-# python run_experiments.py --env $ENV  --method_type Baseline  --total_timesteps $STEPS $TRAIN_MODES --seed $SEED
-# python run_experiments.py --env $ENV  --method_type CompoNet  --total_timesteps $STEPS $TRAIN_MODES --seed $SEED
+# python run_experiments.py --env $ENV  --method_type Baseline  $TRAIN_MODES --seed $SEED
+# python run_experiments.py --env $ENV  --method_type CompoNet  $TRAIN_MODES --seed $SEED
                             # --debug
 # python run_experiments.py --env $ENV  --method_type PackNet   $TRAIN_MODES --seed $SEED
 # python run_experiments.py --env $ENV  --method_type ProgNet   $TRAIN_MODES --seed $SEED

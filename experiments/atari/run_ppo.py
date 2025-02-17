@@ -14,6 +14,8 @@ from typing import Literal, Tuple, Optional
 import pathlib
 from loguru import logger
 from tqdm import tqdm
+from models.cbp_modules import GnT
+from utils.AdamGnT import AdamGnT
 # from task_utils import get_method_type
 
 from torch.utils.tensorboard import SummaryWriter
@@ -34,7 +36,8 @@ from models import (
     CnnTvNetAgent, 
     FuseNetAgent,
     FuseNetwMergeAgent,
-    CnnMaskAgent
+    CnnMaskAgent,
+    CnnCbpAgent,
 )
 
 
@@ -308,6 +311,13 @@ if __name__ == "__main__":
         else:
             agent = CnnMaskAgent(envs, num_tasks=args.total_task_num).to(device)
             agent.set_task(args.mode, new_task=False)
+    elif args.method_type == "CbpNet":
+        if len(args.prev_units) > 0:
+            agent = CnnCbpAgent.load(
+                args.prev_units[0], envs, load_critic=False, reset_actor=False
+            ).to(device)
+        else:
+            agent = CnnCbpAgent(envs).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
@@ -319,6 +329,12 @@ if __name__ == "__main__":
     #     if id(param) in [id(p) for p in trainable_params]:
     #         print(f"Trainable Parameter: {name}")
     optimizer = optim.Adam(trainable_params, lr=args.learning_rate, eps=1e-5)
+    if args.method_type == "CbpNet":
+        logger.info("Using AdamGnT")
+        optimizer = AdamGnT(trainable_params, lr=args.learning_rate, eps=1e-5)
+        GnT = GnT(net=agent.actor.net, opt=optimizer,
+                    replacement_rate=1e-4, decay_rate=0.99, device=device,
+                    maturity_threshold=10000, util_type="contribution")
     if ("FuseNet" in args.method_type) and args.mode > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True
@@ -517,6 +533,10 @@ if __name__ == "__main__":
                 optimizer.step()
                 if ao_exist:
                     alpha_optimizer.step()
+                # Continual Backpropagation: Selective Intialization
+                if args.method_type == "CbpNet":
+                    logger.debug("CbpNet: Selective Initialization")
+                    GnT.gen_and_test(agent.actor.get_activations())
                 
             if args.target_kl is not None and approx_kl > args.target_kl:
                 break
@@ -556,6 +576,8 @@ if __name__ == "__main__":
 
     if args.method_type == "FuseNet":
         agent.log_alphas()
+    # elif args.method_type == "MaskNet":
+    #     agent.consolidate_mask()
     envs.close()
     writer.close()
     

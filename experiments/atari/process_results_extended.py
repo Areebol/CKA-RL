@@ -31,27 +31,35 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "Baseline": "Baseline",
-    # "FinetuneR": "FTR",
     "Finetune": "FT",
+    "CompoNet": "CompoNet",
+    "ProgNet": "ProgressiveNet",
+    "PackNet": "PackNet",
     "FuseNet": "FuseNet",
-    "CompoNet": "CompoNet"
-    # "FuseNetT": "FuseNetT",
-    # "FuseNetTAT": "FuseNetTAT",
+    # "FuseNetwMerge": "FuseNetwMerge",
+    "MaskNet": "MaskNet"
 }
 
 METHOD_COLORS = {
     "Baseline": "darkgray",
-    # "FinetuneR": "tab:blue",
-    "Finetune": "tab:green",
+    "Finetune": "tab:blue",
+    "CompoNet": "tab:green",
+    "ProgNet": "tab:grey",
+    "PackNet": "tab:grey",
     "FuseNet": "tab:red",
-    "CompoNet": "tab:orange"
-    # "FuseNetT": "tab:green",
-    # "FuseNetTAT": "tab:orange",
+    # "FuseNetwMerge": "tab:red",
+    "MaskNet": "tab:red"
 }
 
-METHOD_ORDER = ["Baseline", "Finetune", "CompoNet",
-                "FuseNet", 
+METHOD_ORDER = ["Baseline", "CompoNet", 
+                "Finetune", "ProgNet", 
+                "PackNet",  
+                "FuseNet",
+                "MaskNet"
                 ]
+# METHOD_ORDER = ["baseline", 
+#                 "FuseNet"
+#                 ]
 
 
 def parse_args():
@@ -244,7 +252,7 @@ def compute_forward_transfer(data):
     for task_id in sorted(ft_data.keys()):
         row = [task_id]
         for i, method in enumerate(methods):
-            val = round(ft_data[task_id][method], 2)
+            val = round(ft_data[task_id][method], 4)
             row.append(val)
         table.append(row)
     table.append([None] * len(method))
@@ -257,8 +265,8 @@ def compute_forward_transfer(data):
             1:
         ]:  # ignore the first task to compute the avg. ft
             method_avg.append(ft_data[task_id][method])
-        mean = round(np.mean(method_avg), 2)
-        std = round(np.std(method_avg), 2)
+        mean = round(np.mean(method_avg), 4)
+        std = round(np.std(method_avg), 4)
         avgs.append(f"{mean} ({std})")
     table.append(["Avg."] + avgs)
 
@@ -280,7 +288,7 @@ def compute_final_performance(data):
     for task_id in sorted(data.keys()):
         row = [task_id]
         for i, method in enumerate(methods):
-            val = round(data[task_id][method]["final_success"], 2)
+            val = round(data[task_id][method]["final_success"], 4)
             row.append(val)
         table.append(row)
     table.append([None] * len(method))
@@ -290,8 +298,8 @@ def compute_final_performance(data):
         m = []
         for i in range(len(table) - 1):  # skip Nones row
             m.append(table[i][j])
-        mean = round(np.mean(m), 2)
-        std = round(np.std(m), 2)
+        mean = round(np.mean(m), 4)
+        std = round(np.std(m), 4)
         avgs.append(f"{mean} ({std})")
 
     table.append(["Avg."] + avgs)
@@ -335,8 +343,8 @@ def process_eval(df, data, success_scores, env):
             perf_total += list(s)
             forg_total += list(past_perf - s)
 
-            perf = round(s.mean(), 2)
-            perf_std = round(s.std(), 2)
+            perf = round(s.mean(), 4)
+            perf_std = round(s.std(), 4)
             forg = round((past_perf - s).mean(), 2)
             forg_std = round((past_perf - s).std(), 2)
             print(
@@ -484,7 +492,7 @@ if __name__ == "__main__":
         scores[task_id] = success_score
 
     print("\n** Success scores used:")
-    [print(round(scores[t], 2), end=" ") for t in sorted(scores.keys())]
+    [print(round(scores[t], 4), end=" ") for t in sorted(scores.keys())]
     print()
     #
     # Compute forward transfer & final performance
