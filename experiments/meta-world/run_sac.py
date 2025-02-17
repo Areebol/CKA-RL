@@ -3,6 +3,7 @@ import os
 import random
 import time
 from dataclasses import dataclass
+from tqdm import tqdm
 
 import gymnasium as gym
 import numpy as np
@@ -14,14 +15,14 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent
 from tasks import get_task, get_task_name
 from stable_baselines3.common.buffers import ReplayBuffer
 
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -304,6 +305,19 @@ if __name__ == "__main__":
             pool_size=args.pool_size,
             encoder_from_base=args.encoder_from_base,
         )
+    elif args.model_type == 'masknet':
+        if len(args.prev_units) == 0:
+            model = MaskNetAgent(
+                obs_dim=obs_dim,
+                act_dim=act_dim,
+                num_tasks=20,
+            ).to(device)
+        else:
+            model = MaskNetAgent.load(
+                args.prev_units[0],
+                map_location=device,
+            ).to(device)
+        model.set_task(args.task_id, new_task=True)
 
     actor = Actor(envs, model).to(device)
     qf1 = SoftQNetwork(envs).to(device)
@@ -341,7 +355,7 @@ if __name__ == "__main__":
 
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
-    for global_step in range(args.total_timesteps):
+    for global_step in tqdm(range(args.total_timesteps)):
         # ALGO LOGIC: put action logic here
         if global_step < args.random_actions_end:
             actions = np.array(

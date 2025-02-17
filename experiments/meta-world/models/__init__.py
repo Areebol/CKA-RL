@@ -5,3 +5,4 @@ from .packnet import PackNetAgent
 from .prognet import ProgressiveNetAgent
 from .fusenet import FuseNetAgent
 from .fusenet_merge import FuseMergeNetAgent
+from .masknet import MaskNetAgent

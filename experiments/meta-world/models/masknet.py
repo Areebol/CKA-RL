@@ -5,7 +5,7 @@ from .shared_arch import shared
 from .mask_modules import MultitaskMaskLinear, set_model_task, NEW_MASK_LINEAR_COMB, consolidate_mask
 
 
-class MaskAgent(nn.Module):
+class MaskNetAgent(nn.Module):
     def __init__(self, obs_dim, act_dim, num_tasks):
         super().__init__()
         self.act_dim = act_dim
@@ -35,10 +35,8 @@ class MaskAgent(nn.Module):
         os.makedirs(dirname, exist_ok=True)
         torch.save(self, f"{dirname}/model.pt")
 
-    def load(dirname, map_location=None, reset_heads=False):
+    def load(dirname, map_location=None):
         model = torch.load(f"{dirname}/model.pt", map_location=map_location)
-        if reset_heads:
-            model.reset_heads()
         return model
 
     def set_task(self, task, new_task):

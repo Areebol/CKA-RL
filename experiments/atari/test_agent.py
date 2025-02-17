@@ -16,9 +16,10 @@ from models import (
     # DinoSimpleAgent,
     CnnCompoNetAgent,
     CnnTvNetAgent, 
-    CnnTv2NetAgent, 
     ProgressiveNetAgent,
     PackNetAgent,
+    FuseNetAgent,
+    CnnMaskAgent,
 )
 from task_utils import parse_name_info, path_from_other_mode
 
@@ -32,6 +33,7 @@ def parse_arguments():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--mode", type=int, default=None)
 
+    parser.add_argument("--train_mode", type=int)
     parser.add_argument("--max-timesteps", type=int, default=1000)
     parser.add_argument("--num-episodes", type=int, default=10)
     parser.add_argument('--render', default=False, action='store_true')
@@ -59,25 +61,26 @@ def make_env(env_id, idx, run_name, render_mode=None, mode=None):
     return thunk
 
 def convert_algorithm(algorithm):
+    if algorithm not in ["Baseline", "Finetune"]:
+        return algorithm
     conversion_dict = {
-        "F1": "baseline",
-        "FN": "finetune",
-        "CompoNet": "componet",
-        "PackNet": "packnet",
-        "ProgNet": "prognet",
-        "TV1": "tv_1",
+        "Baseline": "F1",
+        "Finetune": "FN",
     }
     return conversion_dict.get(algorithm, "unknown")
 
+def get_num_task(env):
+    if "SpaceInvaders" in env:
+        return 10
+    elif "Freeway" in env:
+        return 8
+
 if __name__ == "__main__":
     args = parse_arguments()
-
     # env_name, train_mode, algorithm, seed = parse_name_info(args.load.split("/")[-1])
-    env_name, train_mode, algorithm = parse_name_info(args.load.split("/")[-1])
-    algorithm = convert_algorithm(algorithm)
+    env_name, train_mode, algorithm, seed = parse_name_info(args.load.split("/")[-1])
     mode = train_mode if args.mode is None else args.mode
     seed = args.seed
-
     print(
         f"\nEnvironment: {env_name}, train/test mode: {train_mode}/{mode}, algorithm: {algorithm}, seed: {seed}\n"
     )
@@ -96,16 +99,21 @@ if __name__ == "__main__":
     # load the model
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    if algorithm in ["baseline", "finetune"]:
+    if algorithm in ["F1", "FN", "Baseline", "Finetune"]:
         agent = CnnSimpleAgent.load(
             args.load, envs, load_critic=False, map_location=device
         )
-    elif algorithm == "componet":
-        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
+    elif algorithm == "CompoNet":
+        prevs_paths = [path_from_other_mode(args.load, i) for i in range(args.train_mode)]
         agent = CnnCompoNetAgent.load(
             args.load, envs, prevs_paths=prevs_paths, map_location=device
         )
-    elif algorithm == "packnet":
+    elif algorithm == "ProgNet":
+        prevs_paths = [path_from_other_mode(args.load, i) for i in range(args.train_mode)]
+        agent = ProgressiveNetAgent.load(
+            args.load, envs, prevs_paths=prevs_paths, map_location=device
+        )
+    elif algorithm == "PackNet":
         task_id = None if args.mode == None else args.mode + 1
         agent = PackNetAgent.load(args.load, task_id=task_id, map_location=device)
         agent.network.set_view(task_id)
@@ -116,12 +124,10 @@ if __name__ == "__main__":
             ac = PackNetAgent.load(path, map_location=device)
             agent.critic = ac.critic
             agent.actor = ac.actor
-    elif algorithm == "tvnet":
-        prevs_paths = [path_from_other_mode(args.load, i) for i in range(8)]
-        print(prevs_paths)
-        agent = CnnTvNetAgent.load(
-           dirname = args.load, envs = envs, base_dir=path_from_other_mode(args.load, 0), map_location=device
-        )
+    elif algorithm == "FuseNet":
+        agent = FuseNetAgent.load(args.load, envs, map_location=device)
+    elif algorithm == "MaskNet":
+        agent = CnnMaskAgent.load(args.load, envs, num_tasks=get_num_task(env_name), map_location=device)
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)
@@ -161,4 +167,4 @@ if __name__ == "__main__":
             if not exists:
                 f.write("algorithm,environment,train mode,test mode,seed,ep ret\n")
             for v in ep_rets:
-                f.write(f"{algorithm},{env_name},{train_mode},{mode},{seed},{v}\n")
+                f.write(f"{convert_algorithm(algorithm)},{env_name},{train_mode},{mode},{seed},{v}\n")

@@ -7,23 +7,27 @@ TASKS = {
 def parse_name_info(name):
     fields = name.split("_")
     print(fields)
-    if "SpaceInvaders" in fields[0]:
-        env = "ALE/SpaceInvaders-v5"
-    elif "Freeway" in fields[0]:
+    if "Freeway" in fields[0]:
         env = "ALE/Freeway-v5"
+    else:
+        env = "ALE/SpaceInvaders-v5"
+        
     mode = int(fields[1])
     algorithm = fields[2]
-    if len(fields) > 3:
-        algorithm += "_" + fields[3]
-    # seed = int(fields[3])
-    # return env, mode, algorithm, seed
-    return env, mode, algorithm
+    seed = int(fields[3])
+    return env, mode, algorithm, seed
+    # return env, mode, algorithm
 
 
 def path_from_other_mode(base_path, new_mode):
-    sep_idx = base_path.index("_")
-    double_sep_idx = base_path.rindex("_")
-    new_path = base_path[: sep_idx + 1] + str(new_mode) + base_path[double_sep_idx:]
+    results = base_path.split("/")
+    a = results[-1]
+    a_parts = a.split("_")
+    seed = a_parts[-1]
+    method = a_parts[-2]
+    mode = a_parts[-3]
+    env = a_parts[-4]
+    new_path = "/".join(results[:-1]) + "/" + env + "_" + str(new_mode) + "_" + method + "_" + seed
     return new_path
 
 def get_method_type(args):

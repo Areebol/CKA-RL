@@ -50,6 +50,7 @@ class GnT(object):
         self.m = torch.nn.Softmax(dim=1)
         self.mean_feature_act = [torch.zeros(self.net[i * 2].out_features).to(self.device) for i in range(self.num_hidden_layers)]
         self.accumulated_num_features_to_replace = [0 for i in range(self.num_hidden_layers)]
+        self.bounds = self.compute_bounds(hidden_activation="relu", init=None)
 
     def compute_bounds(self, hidden_activation, init='kaiming'):
         if hidden_activation in ['swish', 'elu']: hidden_activation = 'relu'

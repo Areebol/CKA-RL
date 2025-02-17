@@ -333,8 +333,8 @@ if __name__ == "__main__":
         logger.info("Using AdamGnT")
         optimizer = AdamGnT(trainable_params, lr=args.learning_rate, eps=1e-5)
         GnT = GnT(net=agent.actor.net, opt=optimizer,
-                    replacement_rate=1e-4, decay_rate=0.99, device=device,
-                    maturity_threshold=10000, util_type="contribution")
+                    replacement_rate=1e-3, decay_rate=0.99, device=device,
+                    maturity_threshold=1000, util_type="contribution")
     if ("FuseNet" in args.method_type) and args.mode > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True

@@ -58,9 +58,11 @@ class ProgressiveNetAgent(nn.Module):
 
     def load(dirname, envs, prevs_paths, map_location=None):
         model = ProgressiveNetAgent(envs=envs, prevs_paths=prevs_paths)
+        previous_models = model.encoder.previous_models
         model.actor = torch.load(f"{dirname}/actor.pt", map_location=map_location)
         model.encoder = torch.load(f"{dirname}/encoder.pt", map_location=map_location)
-        model.critic = torch.load(f"{dirname}/critic.pt", map_location=map_location)
+        model.encoder.previous_models = previous_models
+        model.critic = torch.load(f"{dirname}/crititc.pt", map_location=map_location)
         return model
 
 
