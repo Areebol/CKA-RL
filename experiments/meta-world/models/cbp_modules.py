@@ -242,18 +242,17 @@ def register_hook(net, hook_fn):
             # it's a non sequential. Register a hook
             layer.register_forward_hook(hook_fn)
             
-class CbpActor(nn.Module):
-    def __init__(self, a_dim):
+class cbpshared(nn.Module):
+    def __init__(self,input_dim):
         super().__init__()
         self.net = nn.Sequential(
-            layer_init(nn.Linear(512, 512)),
-            nn.ReLU(),
-            layer_init(nn.Linear(512, a_dim), std=0.01),
-            nn.Identity(),
+        nn.Linear(input_dim, 256),
+        nn.ReLU(),
+        nn.Linear(256, 256),
+        nn.ReLU(),
         )
-        # Setup feature logging
-        self.setup_feature_logging(h_dim=(512,))
-
+        self.setup_feature_logging(h_dim=(256,))
+        
     def hook_fn(self, m, i, o):
         self.activations[m] = o
 

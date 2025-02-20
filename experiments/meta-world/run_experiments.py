@@ -20,6 +20,8 @@ def parse_args():
             "fusenet",
             "fusenet_merge",
             "masknet",
+            "cbpnet",
+            "rewire",
         ],
         required=True,
     )
@@ -41,13 +43,13 @@ args = parse_args()
 modes = list(range(20)) if args.algorithm != "simple" else list(range(10))
 # args.start_mode = 3
 # NOTE: If the algoritm is not `simple`, it always should start from the second task
-if args.algorithm not in ["simple", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet"] and args.start_mode == 0:
+if args.algorithm not in ["simple", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire"] and args.start_mode == 0:
     start_mode = 1
 else:
     start_mode = args.start_mode
 
 run_name = (
-    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'fusenet', 'fusenet_merge', 'masknet'] else 'simple'}__run_sac__{args.seed}"
+    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'fusenet', 'fusenet_merge', 'masknet', 'cbpnet', 'rewire'] else 'simple'}__run_sac__{args.seed}"
 )
 
 first_idx = modes.index(start_mode)
@@ -62,7 +64,8 @@ for i, task_id in enumerate(modes[first_idx:]):
     else:
         params += " --no-fuse-heads"
     if args.debug:
-        params += " --total-timesteps=1"
+        params += " --total-timesteps=50"
+        params += " --learning_starts=5"
     if args.encoder_from_base:
         params += " --encoder-from-base"
     else:
@@ -79,7 +82,7 @@ for i, task_id in enumerate(modes[first_idx:]):
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.algorithm in ["finetune", "packnet", "masknet"]:
+        elif args.algorithm in ["finetune", "packnet", "masknet", "cbpnet", "rewire"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
 
     # Launch experiment

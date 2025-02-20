@@ -38,6 +38,8 @@ from models import (
     FuseNetwMergeAgent,
     CnnMaskAgent,
     CnnCbpAgent,
+    # CSPAgent,
+    RewireAgent,
 )
 
 
@@ -318,6 +320,16 @@ if __name__ == "__main__":
             ).to(device)
         else:
             agent = CnnCbpAgent(envs).to(device)
+    elif args.method_type == "CSP":
+        raise NotImplementedError
+    elif args.method_type == "Rewire":
+        if len(args.prev_units) > 0:
+            agent = RewireAgent.load(
+                args.prev_units[0], envs, load_critic=False, reset_actor=False
+            ).to(device)
+        else:
+            agent = RewireAgent(envs).to(device)
+        agent.set_task()
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
@@ -578,6 +590,8 @@ if __name__ == "__main__":
         agent.log_alphas()
     # elif args.method_type == "MaskNet":
     #     agent.consolidate_mask()
+    elif args.method_type == "Rewire":
+        agent.set_task(-1)
     envs.close()
     writer.close()
     

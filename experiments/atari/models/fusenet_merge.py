@@ -121,7 +121,7 @@ class FuseNetwMergeAgent(nn.Module):
         torch.save(self.critic, f"{dirname}/critic.pt")
 
     def load(dirname, envs, load_critic=True, reset_actor=False, map_location=None):
-        model = FuseNetwMergeAgent(envs)
+        model = FuseNetwMergeAgent(envs, None, None,)
         model.network = torch.load(f"{dirname}/encoder.pt", map_location=map_location)
         if load_critic:
             model.critic = torch.load(f"{dirname}/critic.pt", map_location=map_location)

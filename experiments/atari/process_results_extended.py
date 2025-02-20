@@ -8,7 +8,7 @@ from tabulate import tabulate
 import sys, os
 
 sys.path.append("../../")
-from utils import style
+# from utils import style
 
 SETTINGS = {
     "SpaceInvaders": dict(
@@ -31,13 +31,17 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "Baseline": "Baseline",
+    # "F1": "Baseline",
+    # "FN": "FT",
     "Finetune": "FT",
     "CompoNet": "CompoNet",
     "ProgNet": "ProgressiveNet",
     "PackNet": "PackNet",
     "FuseNet": "FuseNet",
     # "FuseNetwMerge": "FuseNetwMerge",
-    "MaskNet": "MaskNet"
+    "MaskNet": "MaskNet",
+    "CbpNet":"CbpNet",
+    # "Rewire": "Rewire",
 }
 
 METHOD_COLORS = {
@@ -48,14 +52,18 @@ METHOD_COLORS = {
     "PackNet": "tab:grey",
     "FuseNet": "tab:red",
     # "FuseNetwMerge": "tab:red",
-    "MaskNet": "tab:red"
+    # "MaskNet": "tab:red",
+    "CbpNet": "tab:red"
 }
 
-METHOD_ORDER = ["Baseline", "CompoNet", 
-                "Finetune", "ProgNet", 
+METHOD_ORDER = ["Baseline", 
+                "CompoNet", 
+                "Finetune", 
+                "ProgNet", 
                 "PackNet",  
                 "FuseNet",
-                "MaskNet"
+                # "MaskNet",
+                "CbpNet"
                 ]
 # METHOD_ORDER = ["baseline", 
 #                 "FuseNet"
@@ -67,7 +75,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/Freeway",
         help="path to the directory where the CSV of each task is stored")
-    parser.add_argument("--eval-results", type=str, default="data/eval_Freeway/eval_results.csv", #"data/eval_results.csv",
+    parser.add_argument("--eval-results", type=str, default=None, #"data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")
     # fmt: on
     return parser.parse_args()
@@ -403,7 +411,7 @@ def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
         linewidths=0.7,
     )
 
-    style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
+    # style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
 
     for i, method in enumerate(METHOD_ORDER):
         color = METHOD_COLORS[METHOD_ORDER[i]]
@@ -444,7 +452,7 @@ def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
                 color=color,
             )
 
-        style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
+        # style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
 
     # only applied to the last `ax` (plot)
     ax.set_xlabel("Task ID")
@@ -497,7 +505,7 @@ if __name__ == "__main__":
     #
     # Compute forward transfer & final performance
     #
-    if os.path.exists(args.eval_results):
+    if args.eval_results is not None and os.path.exists(args.eval_results):
         eval_results = process_eval(
             pd.read_csv(args.eval_results), data, scores, f"ALE/{env}-v5"
         )

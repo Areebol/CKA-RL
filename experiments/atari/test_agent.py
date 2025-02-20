@@ -20,6 +20,8 @@ from models import (
     PackNetAgent,
     FuseNetAgent,
     CnnMaskAgent,
+    FuseNetwMergeAgent,
+    RewireAgent,
 )
 from task_utils import parse_name_info, path_from_other_mode
 
@@ -126,8 +128,13 @@ if __name__ == "__main__":
             agent.actor = ac.actor
     elif algorithm == "FuseNet":
         agent = FuseNetAgent.load(args.load, envs, map_location=device)
+    elif algorithm == "FuseNetwMerge":
+        agent = FuseNetwMergeAgent.load(args.load, envs, map_location=device)
     elif algorithm == "MaskNet":
         agent = CnnMaskAgent.load(args.load, envs, num_tasks=get_num_task(env_name), map_location=device)
+    elif algorithm == "Rewire":
+        agent = RewireAgent.load(args.load, envs, map_location=device)
+        agent.set_task(args.mode)
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)

@@ -15,14 +15,16 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent, RewireAgent, CbpAgent
 from tasks import get_task, get_task_name
+from utils.AdamGnT import AdamGnT
 from stable_baselines3.common.buffers import ReplayBuffer
+from models.cbp_modules import GnT
 
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -318,7 +320,30 @@ if __name__ == "__main__":
                 map_location=device,
             ).to(device)
         model.set_task(args.task_id, new_task=True)
-
+    elif args.model_type == 'cbpnet':
+        if len(args.prev_units) == 0:
+            model = CbpAgent(
+                obs_dim=obs_dim,
+                act_dim=act_dim
+                ).to(device)
+        else:
+            model = CbpAgent.load(
+                args.prev_units[0],
+                map_location=device,
+            ).to(device)
+    elif args.model_type == 'rewire':
+        if len(args.prev_units) == 0:
+            model = RewireAgent(
+                obs_dim=obs_dim,
+                act_dim=act_dim
+                ).to(device)
+        else:
+            model = RewireAgent.load(
+                args.prev_units[0],
+                map_location=device,
+            ).to(device)
+        model.set_task()
+        
     actor = Actor(envs, model).to(device)
     qf1 = SoftQNetwork(envs).to(device)
     qf2 = SoftQNetwork(envs).to(device)
@@ -330,7 +355,11 @@ if __name__ == "__main__":
         list(qf1.parameters()) + list(qf2.parameters()), lr=args.q_lr
     )
     actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.policy_lr)
-
+    if args.model_type == 'cbpnet':
+        actor_optimizer = AdamGnT(actor.parameters(), lr=args.policy_lr, eps=1e-5)
+        GnT = GnT(net=actor.model.fc.net, opt=actor_optimizer,replacement_rate=1e-3, decay_rate=0.99, device=device,
+                    maturity_threshold=1000, util_type="contribution")
+        
     # Automatic entropy tuning
     if args.autotune:
         target_entropy = -torch.prod(
@@ -497,7 +526,9 @@ if __name__ == "__main__":
                     writer.add_scalar(
                         "losses/alpha_loss", alpha_loss.item(), global_step
                     )
-
+            if args.model_type == 'cbpnet':
+                # print("cbpnet: selective initailization")
+                GnT.gen_and_test(actor.model.fc.get_activations())
     [
         eval_agent(actor, envs.envs[i], args.num_evals, global_step, writer, device)
         for i in range(envs.num_envs)
