@@ -38,10 +38,10 @@ METHOD_NAMES = {
     "ProgNet": "ProgressiveNet",
     "PackNet": "PackNet",
     "FuseNet": "FuseNet",
-    # "FuseNetwMerge": "FuseNetwMerge",
+    "FuseNetwMerge": "FuseNetwMerge",
     "MaskNet": "MaskNet",
     "CbpNet":"CbpNet",
-    # "Rewire": "Rewire",
+    "Rewire": "Rewire",
 }
 
 METHOD_COLORS = {
@@ -53,7 +53,7 @@ METHOD_COLORS = {
     "FuseNet": "tab:red",
     # "FuseNetwMerge": "tab:red",
     # "MaskNet": "tab:red",
-    "CbpNet": "tab:red"
+    "CbpNet": "tab:red",
 }
 
 METHOD_ORDER = ["Baseline", 
