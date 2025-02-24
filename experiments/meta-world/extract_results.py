@@ -16,6 +16,9 @@ METHOD_NAMES = {
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
     "fusenet": "FuseNet",
+    "masknet": "MaskNet",
+    "rewire": "Rewire",
+    "cbpnet": "CBP",
 }
 
 
@@ -348,7 +351,7 @@ if __name__ == "__main__":
     # Extract data from tensorboard results to an actually useful CSV
     #
     runs_dir = f"./runs/{args.tag}"
-    save_csv = f"./data/{args.tag}/fusenet.csv"
+    save_csv = f"./data/{args.tag}/extract_results.csv"
     exists = os.path.exists(save_csv)
     # if args.no_cache or (not exists and not args.no_cache):
     dfs = []
@@ -376,6 +379,6 @@ if __name__ == "__main__":
     df.to_csv(save_csv, index=False)
 
     a = pd.read_csv('./data/agg_results.csv')
-    b = pd.read_csv(f'./data/{args.tag}/fusenet.csv')
+    b = pd.read_csv(f'./data/{args.tag}/extract_results.csv')
     c = pd.concat([a, b])
     c.to_csv(f'./data/{args.tag}/agg_results.csv')
