@@ -15,7 +15,7 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent, RewireAgent, CbpAgent
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent, RewireAgent, CbpAgent, CReLUsAgent
 from tasks import get_task, get_task_name
 from utils.AdamGnT import AdamGnT
 from stable_baselines3.common.buffers import ReplayBuffer
@@ -24,7 +24,7 @@ from models.cbp_modules import GnT
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire", "creus"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -343,6 +343,17 @@ if __name__ == "__main__":
                 map_location=device,
             ).to(device)
         model.set_task()
+    elif args.model_type == "creus":
+        if len(args.prev_units) == 0:
+            model = CReLUsAgent(
+                obs_dim=obs_dim,
+                act_dim=act_dim
+                ).to(device)
+        else:
+            model = CReLUsAgent.load(
+                args.prev_units[0],
+                map_location=device,
+            ).to(device)
         
     actor = Actor(envs, model).to(device)
     qf1 = SoftQNetwork(envs).to(device)

@@ -8,3 +8,4 @@ from .fusenet_merge import FuseMergeNetAgent
 from .masknet import MaskNetAgent
 from .rewire import RewireAgent
 from .cbpnet import CbpAgent
+from .creus import CReLUsAgent

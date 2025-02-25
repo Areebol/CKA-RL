@@ -29,4 +29,6 @@ STEPS=1000000
 # python run_experiments.py --env $ENV  --method_type ProgNet   $TRAIN_MODES --seed $SEED
 # python run_experiments.py --env $ENV  --method_type MaskNet  $TRAIN_MODES --seed $SEED --tag Baseline
 # python run_experiments.py --env $ENV  --method_type CbpNet  $TRAIN_MODES --seed $SEED --tag Baseline
-python run_experiments.py --env $ENV --method_type Rewire  $TRAIN_MODES --seed $SEED --tag Baseline
+# python run_experiments.py --env $ENV --method_type Rewire  $TRAIN_MODES --seed $SEED --tag Baseline
+# python run_experiments.py --env $ENV --method_type CReLUs  $TRAIN_MODES --seed $SEED --tag Baseline
+python run_experiments.py --env $ENV --method_type CReLUs  $TRAIN_MODES --seed $SEED --tag Baseline

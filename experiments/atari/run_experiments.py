@@ -17,6 +17,7 @@ method_choices = ["Baseline",         # F1
                   "CbpNet",           # CbpNet
                   "CSP",              # Continual SubSpace Policies ICLR 2023
                   "Rewire",           # Rewiring Neuron NIPS 2023 
+                  "CReLUs",           # Concatenated ReLUs CoLLAs 2023 
                   ]
 
 def parse_args():
@@ -108,7 +109,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet", "Rewire"]:
+        elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet", "Rewire", "CReLUs"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
             
     # Launch experiment

@@ -40,6 +40,7 @@ from models import (
     CnnCbpAgent,
     # CSPAgent,
     RewireAgent,
+    CReLUsAgent,
 )
 
 
@@ -330,6 +331,13 @@ if __name__ == "__main__":
         else:
             agent = RewireAgent(envs).to(device)
         agent.set_task()
+    elif args.method_type == "CReLUs":
+        if len(args.prev_units) > 0:
+            agent = CReLUsAgent.load(
+                args.prev_units[0], envs, load_critic=False, reset_actor=False
+            ).to(device)
+        else:
+            agent = CReLUsAgent(envs).to(device)
     else:
         logger.error(f"Method type {args.method_type} is not valid.")
         quit(1)
