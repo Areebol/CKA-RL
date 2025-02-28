@@ -360,7 +360,7 @@ if __name__ == "__main__":
     #
     # Extract data from tensorboard results to an actually useful CSV
     #
-    args.save_csv = f"data/{args.tag}/agg_results.csv"
+    # args.save_csv = f"data/{args.tag}/agg_results.csv"
     exists = os.path.exists(args.save_csv)
     if args.no_cache or (not exists and not args.no_cache):
         dfs = []

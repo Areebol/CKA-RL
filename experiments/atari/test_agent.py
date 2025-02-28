@@ -22,6 +22,8 @@ from models import (
     CnnMaskAgent,
     FuseNetwMergeAgent,
     RewireAgent,
+    CnnCbpAgent,
+    CReLUsAgent,
 )
 from task_utils import parse_name_info, path_from_other_mode
 
@@ -135,6 +137,10 @@ if __name__ == "__main__":
     elif algorithm == "Rewire":
         agent = RewireAgent.load(args.load, envs, map_location=device)
         agent.set_task(args.mode)
+    elif algorithm == "CReLUs":
+        agent = CReLUsAgent.load(args.load, envs, map_location=device)
+    elif algorithm == "CbpNet":
+        agent = CnnCbpAgent.load(args.load, envs, map_location=device)
     else:
         print(f"Loading of agent type `{algorithm}` is not implemented.")
         quit(1)

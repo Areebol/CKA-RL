@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 import torch
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent
+from models import *
 from tasks import get_task, get_task_name
 import argparse
 import os
@@ -97,6 +97,25 @@ if __name__ == "__main__":
 
     if method in ["simple", "finetune"]:
         model = SimpleAgent.load(args.load, map_location=device)
+    elif method == "componet":
+        ...
+    elif method == "prognet":
+        ...
+    elif method == "packnet":
+        ...
+    elif method == "fusenet":
+        ...
+    elif method == "fusenet_merge":
+        ...
+    elif method == "masknet":
+        ...
+    elif method == "cbpnet":
+        ...
+    elif method == "rewire":
+        ...
+    elif method == "creus":
+        ...
+    
 
     agent = Actor(envs, model)
 

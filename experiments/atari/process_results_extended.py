@@ -41,7 +41,8 @@ METHOD_NAMES = {
     "FuseNetwMerge": "FuseNetwMerge",
     "MaskNet": "MaskNet",
     "CbpNet":"CbpNet",
-    "Rewire": "Rewire",
+    # "Rewire": "Rewire",
+    "CReLUs": "CReLUs",
 }
 
 METHOD_COLORS = {
@@ -63,7 +64,8 @@ METHOD_ORDER = ["Baseline",
                 "PackNet",  
                 "FuseNet",
                 # "MaskNet",
-                "CbpNet"
+                "CbpNet",
+                "CReLUs",
                 ]
 # METHOD_ORDER = ["baseline", 
 #                 "FuseNet"
@@ -543,4 +545,4 @@ if __name__ == "__main__":
     # Plotting
     #
     env = args.data_dir.split("/")[-1]
-    plot_data(data, save_name=f"success_curves_{env}.pdf")
+    # plot_data(data, save_name=f"success_curves_{env}.pdf")

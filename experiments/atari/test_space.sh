@@ -1,6 +1,6 @@
 ENV_NAME=SpaceInvaders
 TRAIN_MODES=(0 1 2 3 4 5 6 7 8 9)
-for METHOD in Finetune Baseline PackNet ProgNet FuseNet MaskNet CompoNet 
+for METHOD in CbpNet CReLUs
 do
     for TRAIN_MODE in "${TRAIN_MODES[@]}"
     do
