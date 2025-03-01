@@ -91,19 +91,22 @@ class CompoNetAgent(nn.Module):
         torch.save(self.net_logstd, f"{dirname}/net_logstd.pt")
 
     def load(dirname, obs_dim, act_dim, prev_paths, map_location=None):
-        print("Loading previous:", prevs_paths)
+        print("Loading previous:", prev_paths)
 
         model = CompoNetAgent(
             obs_dim=obs_dim,
             act_dim=act_dim,
-            prevs_paths=prevs_paths,
+            prev_paths=prev_paths,
             map_location=map_location,
         )
         model.net_logstd = torch.load(
             f"{dirname}/net_logstd.pt", map_location=map_location
         )
 
-        net_mean = torch.load(f"{dirname}/net_logstd.pt", map_location=map_location)
+        # model.net_mean = torch.load(
+            # f"{dirname}/net_logstd.pt", map_location=map_location
+        # )
+        net_mean = torch.load(f"{dirname}/net_mean.pt", map_location=map_location)
 
         curr = model.net_mean.state_dict()
         other = net_mean.state_dict()

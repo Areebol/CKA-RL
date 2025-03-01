@@ -136,8 +136,13 @@ class FuseMergeNetAgent(nn.Module):
         torch.save(self.fc_mean, f"{dirname}/fc_mean.pt")
         torch.save(self.fc_logstd, f"{dirname}/fc_logstd.pt")
 
-    def load(dirname, map_location=None, reset_heads=False):
-        model = FuseMergeNetAgent()
+    def load(dirname,
+             obs_dim, 
+            act_dim, 
+            base_dir=None,
+            latest_dir=None, 
+            map_location=None, reset_heads=False):
+        model = FuseMergeNetAgent(obs_dim,act_dim,None,None)
         model.fc = torch.load(f"{dirname}/fc.pt", map_location=map_location)
         model.fc_mean = torch.load(f"{dirname}/fc_mean.pt", map_location=map_location)
         model.fc_logstd = torch.load(f"{dirname}/fc_logstd.pt", map_location=map_location)

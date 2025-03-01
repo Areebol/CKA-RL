@@ -182,7 +182,7 @@ def compute_forward_transfer(df, methods, smoothing_window):
                 vals.append(v)
         mean = np.mean(vals)
         std = np.std(vals)
-        row.append((round(mean, 2), round(std, 2)))
+        row.append((round(mean, 4), round(std, 4)))
     table.append(row)
 
     print("\n== FORWARD TRANSFER ==")
@@ -347,14 +347,15 @@ if __name__ == "__main__":
         "fusenet_merge": "FuseNet",
         "masknet": "MaskNet",
         "rewire": "Rewire",
-        "cbpnet": "CBP"
+        "cbpnet": "CBP",
+        "creus": "CRELUS",
     }
     # hardcoded settings
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type, "masknet", "rewire", "cbpnet"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", args.fuse_type, "MaskNet", "Rewire", "CBP"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type, "masknet", "rewire", "cbpnet", "creus", "fusenet_merge"]
+    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", args.fuse_type, "MaskNet", "Rewire", "CBP", "CReLUs"]
     method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #

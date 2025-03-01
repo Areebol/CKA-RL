@@ -49,7 +49,21 @@ class ProgressiveNetAgent(nn.Module):
         dirname, obs_dim, act_dim, prev_paths, map_location=None, reset_heads=False
     ):
         model = ProgressiveNetAgent(obs_dim, act_dim, prev_paths, map_location)
-        model.fc = torch.load(f"{dirname}/model.pt", map_location=map_location)
+
+        model.fc = torch.load(f"{dirname}/prognet.pt", map_location=map_location)
+        if len(prev_paths) > 0:
+            prevs = [
+                torch.load(f"{p}/prognet.pt", map_location=map_location)
+                for p in prev_paths
+            ]
+        for m in prevs:
+            if hasattr(m, "previous_models"):
+                del m.previous_models
+            m.eval()
+            for param in m.parameters():
+                param.requires_grad = False
+                
+        model.fc.previous_models = prevs
         if reset_heads:
             return model
         else:
