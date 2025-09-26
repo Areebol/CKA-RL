@@ -23,7 +23,7 @@ class FuseLinear(nn.Module):
                  bias: bool = True, 
                  num_weights: int = 0, # 0 = train base weight， n = train base weight + alpha * tau
                  alpha: nn.Parameter = None,
-                 alpha_scale: nn.Parameter = None,
+                 alpha_scale: nn.Parameter = torch.tensor(1.0, requires_grad=False),
                  device=None, dtype=None) -> None:
         factory_kwargs = {'device': device, 'dtype': dtype}
         super().__init__()
@@ -156,7 +156,7 @@ class FuseShared(nn.Module):
                     layer_init=lambda x, **kwargs: x,
                     num_weights: int = 0, # 0 = train base weight， n = train base weight + alpha * tau
                     alpha: nn.Parameter = None,
-                    alpha_scale: nn.Parameter = None,
+                    alpha_scale: nn.Parameter = torch.tensor(1.0, requires_grad=False),
                     global_alpha: bool = True):
         super().__init__()
         self.fuse_layers = [0,2]

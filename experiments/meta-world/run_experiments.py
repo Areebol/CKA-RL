@@ -41,7 +41,7 @@ def parse_args():
 
 args = parse_args()
 
-modes = list(range(20)) if args.algorithm != "simple" else list(range(10))
+modes = list(range(24)) if args.algorithm != "simple" else list(range(10))
 # args.start_mode = 3
 # NOTE: If the algoritm is not `simple`, it always should start from the second task
 if args.algorithm not in ["simple", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire", "creus"] and args.start_mode == 0:

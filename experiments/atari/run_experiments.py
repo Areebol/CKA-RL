@@ -43,13 +43,34 @@ def parse_args():
     parser.add_argument("--alpha_init", type=str, default="Randn") 
     parser.add_argument("--alpha_major", type=float, default=0.6) 
     parser.add_argument("--pool_size", type=int, default=4) 
+    parser.add_argument("--task_order", type=int, required=True)
     
     return parser.parse_args()
 
 
 args = parse_args()
 logger.info(f"experiments args : {args}")
-modes = TASKS[args.env]
+# modes = TASKS[args.env]
+TASKS_ORDER_1 = {
+    "ALE/SpaceInvaders-v5": [1, 0, 2, 3, 4, 5, 6, 7, 8, 9],
+    "ALE/Freeway-v5": [1, 0, 2, 3, 4, 5, 6, 7],
+}
+TASKS_ORDER_2 = {
+    "ALE/SpaceInvaders-v5": [2, 0, 1, 3, 4, 5, 6, 7, 8, 9],
+    "ALE/Freeway-v5": [2, 0, 1, 3, 4, 5, 6, 7],
+}
+TASKS_ORDER_3 = {
+    "ALE/SpaceInvaders-v5": [3, 0, 1, 2, 4, 5, 6, 7, 8, 9],
+    "ALE/Freeway-v5": [3, 0, 1, 2, 4, 5, 6, 7],
+}
+
+if args.task_order == 1:
+    modes = TASKS_ORDER_1[args.env]  # e.g. [0, 1, 2, 3, 4, 5, 6, 7] for Freeway
+elif args.task_order == 2:
+    modes = TASKS_ORDER_2[args.env]
+elif args.task_order == 3:
+    modes = TASKS_ORDER_3[args.env]
+    
 first_mode = args.first_mode
 last_mode = args.last_mode
 debug = args.debug
@@ -63,14 +84,15 @@ run_name = (
     lambda task_id: f"{env_name}_{task_id}_{args.method_type}_{args.seed}" # e.g. Freeway_1_FN、Freeway_2_TV_1
 )
 
-first_idx = modes.index(first_mode)
-last_idx = modes.index(last_mode)
+# first_idx = modes.index(first_mode)
+# last_idx = modes.index(last_mode)
 
-for i, task_id in enumerate(modes[first_idx:last_idx+1]):
+for i, task_id in enumerate(modes):
     # params
     save_dir = f"agents/{env_name}/{args.tag}"
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
     params += f" --mode={task_id}"
+    params += f" --task_id={i}"
     params += f" --tag={args.tag}"
     params += f" --total_timesteps={args.total_timesteps}"
     params += f" --delta_theta_mode={args.delta_theta_mode}"
@@ -101,16 +123,17 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     if args.method_type in ["PackNet", "MaskNet"]:
         params += f" --total-task-num={len(modes)}"
 
-    if first_idx > 0 or i > 0:
+    # if first_idx > 0 or i > 0:
+    if i > 0:
         # multiple previous modules
         if args.method_type in ["CompoNet", "ProgNet", "TvNet", "FuseNet", "FuseNetwMerge"]:
             params += " --prev-units"
             logger.info(f"Method {args.method_type} need prevs-units, adding prevs-units")
-            for i in modes[: modes.index(task_id)]:
-                params += f" {save_dir}/{run_name(i)}"
+            for j in range(len(modes[: modes.index(task_id)])):
+                params += f" {save_dir}/{run_name(j)}"
         # single previous module
         elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet", "Rewire", "CReLUs"]:
-            params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
+            params += f" --prev-units {save_dir}/{run_name(i-1)}"
             
     # Launch experiment
     cmd = f"python run_ppo.py {params}"

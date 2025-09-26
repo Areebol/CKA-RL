@@ -8,6 +8,7 @@ from componet import CompoNet, FirstModuleWrapper
 import torch.utils.benchmark as benchmark
 import pandas as pd
 import argparse
+from models.fuse_module import FuseLinear, FuseShared
 
 
 def parse_args():
@@ -18,10 +19,10 @@ def parse_args():
     parser.add_argument("--hidden-dim", type=int, default=256)
     parser.add_argument("--batch-size", type=int, default=8)
 
-    parser.add_argument("--test-prevs", type=int, default=[5, 10, 20], nargs="+")
+    parser.add_argument("--test-prevs", type=int, default=[5,10,50,100,150,200,300], nargs="+")
     parser.add_argument("--min-run-time", type=int, default=5)
 
-    parser.add_argument("--save-path", type=str, default="data/benchmarking.csv")
+    parser.add_argument("--save-path", type=str, default="./benchmarking.csv")
 
     parser.add_argument("--plot", type=bool, default=False,
         action=argparse.BooleanOptionalAction,
@@ -50,6 +51,45 @@ def build_prognet(obs_dim, act_dim, hidden_dim, num_prevs, device):
     model = nn.Sequential(model, nn.Linear(hidden_dim, act_dim)).to(device)
     return model
 
+def build_simple(obs_dim, act_dim, hidden_dim, device):
+    from models.shared_arch import shared
+    
+    return nn.Sequential(
+        shared(obs_dim).to(device),
+        nn.Linear(256, hidden_dim * 2).to(device),
+        nn.ReLU(),
+        nn.Linear(hidden_dim * 2, hidden_dim * 2).to(device),
+        nn.ReLU(),
+        nn.Linear(hidden_dim * 2, hidden_dim).to(device),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, hidden_dim).to(device),
+        nn.ReLU(),
+        nn.Linear(hidden_dim, hidden_dim).to(device),
+        nn.Linear(hidden_dim, hidden_dim).to(device),
+        nn.Linear(hidden_dim, hidden_dim).to(device),
+        nn.Linear(hidden_dim, hidden_dim).to(device),
+        nn.Linear(hidden_dim, act_dim).to(device),
+    ).to(device)
+
+def build_cka_rl(obs_dim, act_dim, hidden_dim, num_prevs, device):
+    alpha = nn.Parameter(torch.ones(num_prevs))
+        
+    return nn.Sequential(
+        FuseShared(obs_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        FuseLinear(256, hidden_dim * 2, num_weights=num_prevs, alpha=alpha).to(device),
+        nn.ReLU(),
+        FuseLinear(hidden_dim * 2, hidden_dim * 2, num_weights=num_prevs, alpha=alpha).to(device),
+        nn.ReLU(),
+        FuseLinear(hidden_dim * 2, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        nn.ReLU(),
+        FuseLinear(hidden_dim, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        nn.ReLU(),
+        FuseLinear(hidden_dim, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        FuseLinear(hidden_dim, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        FuseLinear(hidden_dim, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        FuseLinear(hidden_dim, hidden_dim, num_weights=num_prevs, alpha=alpha).to(device),
+        FuseLinear(hidden_dim, act_dim, num_weights=num_prevs, alpha=alpha).to(device),
+    ).to(device)
 
 def build_componet(obs_dim, act_dim, hidden_dim, num_prevs, device):
     assert num_prevs > 1
@@ -82,13 +122,16 @@ def trainable_params(model):
 
 
 def total_params(model):
-    return sum(p.numel() for p in model.parameters())
+    return sum(p.numel() * p.element_size() for p in model.parameters())
 
 
 def prognet_total_parameters(model):
     s = sum([total_params(m) for m in model[0].previous_models])
     return s + total_params(model)
 
+def cka_rl_total_parameters(model):
+    s = sum([total_params(m) for m in model[:-1]])
+    return s + total_params(model[-1])
 
 def componet_total_parameters(model):
     s = sum([total_params(m) for m in model.previous_units])
@@ -379,26 +422,25 @@ if __name__ == "__main__":
 
     dfs = []
     for num_prevs in args.test_prevs:
-        print("\n==> Num. prevs.:", num_prevs)
-        prognet = build_prognet(
+        cka_rl = build_cka_rl(
             args.obs_dim, args.act_dim, args.hidden_dim, num_prevs, device
         )
-        p_trainable = trainable_params(prognet)
-        p_total = prognet_total_parameters(prognet)
-        print(f"ProgressiveNet parameters: {p_total}, trainable: {p_trainable}")
+        p_trainable = trainable_params(cka_rl)
+        p_total = total_params(cka_rl)
+        param_size_MB = p_total / (1024**2)
+        print(f"CKA-RL model parameters: {p_total}, trainable: {p_trainable}, parameter size: {param_size_MB:.2f} MBs")
         t0 = benchmark.Timer(
             stmt="model(x)",
-            globals={"x": x, "model": prognet},
+            globals={"x": x, "model": cka_rl},
             num_threads=torch.get_num_threads(),
-            description="ProgressiveNet",
+            description="CKA-RL",
             sub_label=str(num_prevs),
         )
-
         r = t0.blocked_autorange(min_run_time=args.min_run_time)
         df = pd.DataFrame(
             {
                 "time": r.times,
-                "method": "ProgressiveNet",
+                "method": "CKA-RL",
                 "total parameters": p_total,
                 "trainable parameters": p_trainable,
                 "num prevs": num_prevs,
@@ -406,31 +448,88 @@ if __name__ == "__main__":
         )
         dfs.append(df)
 
-        compo = build_componet(
-            args.obs_dim, args.act_dim, args.hidden_dim, num_prevs, device
-        )
-        p_trainable = trainable_params(compo)
-        p_total = componet_total_parameters(compo)
-        print(f"CompoNet parameters: {p_total}, trainable: {p_trainable}")
-        t1 = benchmark.Timer(
-            stmt="model(x)",
-            globals={"x": x, "model": compo},
-            num_threads=torch.get_num_threads(),
-            description="CompoNet",
-            sub_label=str(num_prevs),
-        )
+        # simple = build_simple(
+        #     args.obs_dim, args.act_dim, args.hidden_dim, device
+        # )
+        # p_trainable = trainable_params(simple)
+        # p_total = total_params(simple)
+        # param_size_MB = p_total / (1024**2)
+        # print(f"Simple model parameters: {p_total}, trainable: {p_trainable}, parameter size: {param_size_MB:.2f} MBs")
+        # t0 = benchmark.Timer(
+        #     stmt="model(x)",
+        #     globals={"x": x, "model": simple},
+        #     num_threads=torch.get_num_threads(),
+        #     description="Simple",
+        #     sub_label=str(num_prevs),
+        # )
+        # r = t0.blocked_autorange(min_run_time=args.min_run_time)
+        # df = pd.DataFrame(
+        #     {
+        #         "time": r.times,
+        #         "method": "Simple",
+        #         "total parameters": p_total,
+        #         "trainable parameters": p_trainable,
+        #         "num prevs": num_prevs,
+        #     }
+        # )
+        # dfs.append(df)
+        
+        # print("\n==> Num. prevs.:", num_prevs)
+        # prognet = build_prognet(
+        #     args.obs_dim, args.act_dim, args.hidden_dim, num_prevs, device
+        # )
+        # p_trainable = trainable_params(prognet)
+        # p_total = prognet_total_parameters(prognet)
+        # param_size_MB = p_total / (1024**2)
+        
+        # print(f"ProgressiveNet parameters: {p_total}, trainable: {p_trainable}, parameter size: {param_size_MB:.2f} MBs")
+        # t0 = benchmark.Timer(
+        #     stmt="model(x)",
+        #     globals={"x": x, "model": prognet},
+        #     num_threads=torch.get_num_threads(),
+        #     description="ProgressiveNet",
+        #     sub_label=str(num_prevs),
+        # )
 
-        r = t1.blocked_autorange(min_run_time=args.min_run_time)
-        df = pd.DataFrame(
-            {
-                "time": r.times,
-                "method": "CompoNet",
-                "total parameters": p_total,
-                "trainable parameters": p_trainable,
-                "num prevs": num_prevs,
-            }
-        )
-        dfs.append(df)
+        # r = t0.blocked_autorange(min_run_time=args.min_run_time)
+        # df = pd.DataFrame(
+        #     {
+        #         "time": r.times,
+        #         "method": "ProgressiveNet",
+        #         "total parameters": p_total,
+        #         "trainable parameters": p_trainable,
+        #         "num prevs": num_prevs,
+        #     }
+        # )
+        # dfs.append(df)
+
+        # compo = build_componet(
+        #     args.obs_dim, args.act_dim, args.hidden_dim, num_prevs, device
+        # )
+        # p_trainable = trainable_params(compo)
+        # p_total = componet_total_parameters(compo)
+        # param_size_MB = p_total / (1024**2)
+        
+        # print(f"CompoNet parameters: {p_total}, trainable: {p_trainable}, parameter size: {param_size_MB:.2f} MBs")
+        # t1 = benchmark.Timer(
+        #     stmt="model(x)",
+        #     globals={"x": x, "model": compo},
+        #     num_threads=torch.get_num_threads(),
+        #     description="CompoNet",
+        #     sub_label=str(num_prevs),
+        # )
+
+        # r = t1.blocked_autorange(min_run_time=args.min_run_time)
+        # df = pd.DataFrame(
+        #     {
+        #         "time": r.times,
+        #         "method": "CompoNet",
+        #         "total parameters": p_total,
+        #         "trainable parameters": p_trainable,
+        #         "num prevs": num_prevs,
+        #     }
+        # )
+        # dfs.append(df)
 
     df = pd.concat(dfs)
     df.to_csv(args.save_path)

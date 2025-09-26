@@ -15,7 +15,7 @@ import pathlib
 from loguru import logger
 from tqdm import tqdm
 from models.cbp_modules import GnT
-from utils.AdamGnT import AdamGnT
+from model_utils.AdamGnT import AdamGnT
 # from task_utils import get_method_type
 
 from torch.utils.tensorboard import SummaryWriter
@@ -155,6 +155,9 @@ class Args:
     pool_size: int = 3
     """pool size for FuseNetwMerge"""
 
+    task_id: int = 0
+    """task id for the current task"""
+
 def make_env(env_id, idx, capture_video, run_name, mode=None):
     def thunk():
         if mode is None:
@@ -187,7 +190,8 @@ if __name__ == "__main__":
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
     args.num_iterations = args.total_timesteps // args.batch_size
-    m = f"{args.mode}" if args.mode is not None else ""
+    # m = f"{args.mode}" if args.mode is not None else ""
+    m = f"{args.task_id}" if args.mode is not None else ""
     env_name = args.env_id.split("/")[1].split("-")[0] # e.g. ALE/Freeway-v5 -> Freeway
     run_name = f"{env_name}_{m}_{args.method_type}_{args.seed}"
     ao_exist = False # has alpha_optimizer if True
@@ -355,7 +359,7 @@ if __name__ == "__main__":
         GnT = GnT(net=agent.actor.net, opt=optimizer,
                     replacement_rate=1e-3, decay_rate=0.99, device=device,
                     maturity_threshold=1000, util_type="contribution")
-    if ("FuseNet" in args.method_type) and args.mode > 1:
+    if ("FuseNet" in args.method_type) and args.task_id > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True
         alpha_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" in name]
@@ -609,7 +613,7 @@ if __name__ == "__main__":
     import pandas as pd
     df = pd.DataFrame(logs)
     if args.tag is not None:
-        log_dir = f"./data/{env_name}/{args.tag}/{args.method_type}/{args.mode}"  
+        log_dir = f"./data/{env_name}/{args.tag}/{args.method_type}/{args.task_id}"  
         # logger.info(f"saved log return to {log_dir}/returns.csv") # ./data/Freeway/tag/FuseNet/mode/returns.csv
         os.makedirs(log_dir, exist_ok=True)
         df.to_csv(f"{log_dir}/returns.csv", index=False)

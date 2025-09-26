@@ -13,7 +13,22 @@ single_tasks = [
     "peg-unplug-side-v2",
 ]
 
-tasks = single_tasks + single_tasks
+tasks_dict = {
+    0: "hammer-v2",
+    1: "push-wall-v2",
+    2: "faucet-close-v2",
+    3: "push-back-v2",
+    4: "stick-pull-v2",
+    5: "handle-press-side-v2",
+    6: "push-v2",
+    7: "shelf-place-v2",
+    8: "window-close-v2",
+    9: "peg-unplug-side-v2",
+}
+selected_tasks_id = [2, 3, 5, 8]
+extended_tasks = [tasks_dict[idx] for idx in selected_tasks_id]
+
+tasks = single_tasks + single_tasks + extended_tasks
 
 
 def get_task_name(task_id):

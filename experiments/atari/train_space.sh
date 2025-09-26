@@ -31,4 +31,5 @@ STEPS=1000000
 # python run_experiments.py --env $ENV  --method_type CbpNet  $TRAIN_MODES --seed $SEED --tag Baseline
 # python run_experiments.py --env $ENV --method_type Rewire  $TRAIN_MODES --seed $SEED --tag Baseline
 # python run_experiments.py --env $ENV --method_type CReLUs  $TRAIN_MODES --seed $SEED --tag Baseline
-python run_experiments.py --env $ENV --method_type CReLUs  $TRAIN_MODES --seed $SEED --tag Baseline
+# python run_experiments.py --env "ALE/SpaceInvaders-v5" --method_type CompoNet  --first-mode 0 --last-mode 9 --seed 42 --tag ExchangeTaskOrder_3 --task_order 3
+python run_experiments.py --env "ALE/SpaceInvaders-v5" --method_type FuseNet  --first-mode 0 --last-mode 9 --seed 42 --tag ExchangeTaskOrder_3 --task_order 3 --fuse_actor

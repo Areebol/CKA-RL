@@ -9,7 +9,7 @@ import os, sys
 import argparse
 from tabulate import tabulate
 
-
+NUM_TASKS = 24
 
 def parse_args():
     # fmt: off
@@ -121,7 +121,7 @@ def compute_forward_transfer(df, methods, smoothing_window):
 
     table = []
     results = {}
-    for task_id in range(20):
+    for task_id in range(NUM_TASKS):
         # do not compute forward transfer for the first task
         if task_id == 0:
             table.append([0] + [None] * len(methods))
@@ -202,12 +202,12 @@ def compute_performance(df, methods, col="charts/test_success", fuse_type="fusen
     avgs = [[] for _ in range(len(methods))]
     results = {}
     eval_steps = df["step"].unique()[-10]
-    for i in range(20):
+    for i in range(NUM_TASKS):
         row = [i]
         for j, m in enumerate(methods):
             task_id = i if m != "simple" else i % 10
 
-            method = "simple" if task_id == 0 and m in ["componet", "finetune", fuse_type] else m
+            method = "simple" if task_id == 0 and m in ["componet", "finetune", fuse_type, "fusenet_merge"] else m
 
             s = df[
                 (df["task_id"] == task_id)
@@ -262,7 +262,7 @@ def count(df, methods):
     counts = counts.reset_index()
     table = []
     all_vals = []
-    for task_id in range(20):
+    for task_id in range(NUM_TASKS):
         row = [task_id]
         for method in methods:
             c = counts[
@@ -343,25 +343,25 @@ if __name__ == "__main__":
         "componet": "CompoNet",
         "prognet": "ProgressiveNet",
         "packnet": "PackNet",
-        "fusenet": "FuseNet",
+        # "fusenet": "FuseNet",
         "fusenet_merge": "FuseNet",
-        "masknet": "MaskNet",
-        "rewire": "Rewire",
-        "cbpnet": "CBP",
-        "creus": "CRELUS",
+        # "masknet": "MaskNet",
+        # "rewire": "Rewire",
+        # "cbpnet": "CBP",
+        # "creus": "CRELUS",
     }
     # hardcoded settings
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type, "masknet", "rewire", "cbpnet", "creus", "fusenet_merge"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type, "masknet", "rewire", "cbpnet", "creus"]
     fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", args.fuse_type, "MaskNet", "Rewire", "CBP", "CReLUs"]
     method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
     # Extract data from tensorboard results to an actually useful CSV
     #
-    # args.save_csv = f"data/{args.tag}/agg_results.csv"
+    args.save_csv = f"data/{args.tag}/agg_results.csv"
     exists = os.path.exists(args.save_csv)
     if args.no_cache or (not exists and not args.no_cache):
         dfs = []
@@ -396,36 +396,36 @@ if __name__ == "__main__":
     count(df, methods)
 
     data_perf = compute_performance(df, methods, args.fuse_type)
-
-    if os.path.exists(args.eval_csv):
-        eval_perf, eval_forg = process_eval(pd.read_csv(args.eval_csv), data_perf)
-
     ft_data = compute_forward_transfer(df, methods, args.smoothing_window)
+
+    # if os.path.exists(args.eval_csv):
+        # eval_perf, eval_forg = process_eval(pd.read_csv(args.eval_csv), data_perf)
+
 
     #
     # Save summary CSV
     #
-    fname = f"./data/{args.tag}/summary_data_mw.csv"
-    with open(fname, "w") as f:
-        f.write("env,method,task id,perf,perf std,ft,forg,forg std\n")
-        for task_id in range(20):
-            for method in df["model_type"].unique():
-                if method in ["finetune", "simple"]:
-                    perf = eval_perf[method]["avgs"][task_id % 10]
-                    perf_std = eval_perf[method]["stds"][task_id % 10]
-                    forg, forg_std = eval_forg[method][task_id % 10]
-                else:
-                    perf, perf_std = data_perf[method][task_id]
-                    forg, forg_std = 0, 0
+    # fname = f"./data/{args.tag}/summary_data_mw.csv"
+    # with open(fname, "w") as f:
+    #     f.write("env,method,task id,perf,perf std,ft,forg,forg std\n")
+    #     for task_id in range(20):
+    #         for method in df["model_type"].unique():
+    #             if method in ["finetune", "simple"]:
+    #                 perf = eval_perf[method]["avgs"][task_id % 10]
+    #                 perf_std = eval_perf[method]["stds"][task_id % 10]
+    #                 forg, forg_std = eval_forg[method][task_id % 10]
+    #             else:
+    #                 perf, perf_std = data_perf[method][task_id]
+    #                 forg, forg_std = 0, 0
 
-                if method == "simple" or task_id == 0:
-                    ft = 0
-                else:
-                    ft = ft_data[method][task_id - 1]
-                f.write(
-                    f"metaworld,{METHOD_NAMES[method]},{task_id},{perf},{perf_std},{ft},{forg},{forg_std}\n"
-                )
-    print(f"\n*** A summary of the results has been saved to `{fname}` ***\n")
+    #             if method == "simple" or task_id == 0:
+    #                 ft = 0
+    #             else:
+    #                 ft = ft_data[method][task_id - 1]
+    #             f.write(
+    #                 f"metaworld,{METHOD_NAMES[method]},{task_id},{perf},{perf_std},{ft},{forg},{forg_std}\n"
+    #             )
+    # print(f"\n*** A summary of the results has been saved to `{fname}` ***\n")
 
     if args.no_plots:
         quit()

@@ -31,28 +31,42 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "Baseline": "Baseline",
-    "Finetune": "FT",
+    # "Finetune": "FT",
     "CompoNet": "CompoNet",
-    "ProgNet": "ProgressiveNet",
-    "PackNet": "PackNet",
-    "FuseNet": "FuseNet",
-    "FuseNetwMerge": "FuseNetwMerge",
+    # "ProgNet": "ProgressiveNet",
+    # "PackNet": "PackNet",
+    "FuseNet": "CKA-RL",
+    # "FuseNetwMerge": "CKA-RL",
+    # "CReLUs": "CReLUs",
+    # "MaskNet": "MaskNet",
+    # "Rewire": "Rewire",
+    # "CbpNet": "CbpNet",
 }
 
 METHOD_COLORS = {
     "Baseline": "darkgray",
-    "Finetune": "tab:blue",
+    # "Finetune": "tab:blue",
     "CompoNet": "tab:green",
-    "ProgNet": "tab:grey",
-    "PackNet": "tab:grey",
+    # "ProgNet": "tab:orange",
+    # "PackNet": "tab:purple",
     "FuseNet": "tab:red",
-    "FuseNetwMerge": "tab:red",
+    # "FuseNetwMerge": "tab:brown",
+    # "CReLUs": "tab:pink",
+    # "MaskNet": "tab:cyan",
+    # "Rewire": "tab:olive",
+    # "CbpNet": "tab:gray",
 }
 
-METHOD_ORDER = ["Baseline", "CompoNet", 
-                "Finetune", "ProgNet", 
-                "PackNet",  
-                "FuseNet", "FuseNetwMerge"
+METHOD_ORDER = ["Baseline", 
+                # "Finetune", 
+                # "ProgNet", 
+                # "PackNet",  
+                # "MaskNet",
+                # "CReLUs",
+                "CompoNet",
+                # "CbpNet", 
+                "FuseNet",
+                # "FuseNetwMerge",
                 ]
 # METHOD_ORDER = ["baseline", 
 #                 "FuseNet"
@@ -64,7 +78,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/Freeway",
         help="path to the directory where the CSV of each task is stored")
-    parser.add_argument("--eval-results", type=str, default="data/eval_Freeway/eval_results.csv", #"data/eval_results.csv",
+    parser.add_argument("--eval-results", type=str, default=None, #"data/eval_results.csv",
         help="path to the file where the CSV with the evaluation results is located")
     # fmt: on
     return parser.parse_args()
@@ -364,6 +378,108 @@ def process_eval(df, data, success_scores, env):
     return eval_results
 
 
+# def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
+#     methods = METHOD_ORDER
+#     num_tasks = len(data.keys())
+#     fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 12))
+
+#     #
+#     # Plot all the method together
+#     #
+#     ax = axes[0]
+#     for i in range(num_tasks):
+#         for method in methods:
+#             offset = i * total_timesteps
+#             ax.plot(
+#                 data[i][method]["global_step"] + offset,
+#                 data[i][method]["success"],
+#                 c=METHOD_COLORS[method],
+#                 linewidth=0.8,
+#             )
+#             ax.set_ylabel("Success")
+
+#     ax.set_xticks(
+#         np.arange(num_tasks) * 1e6,
+#         [f"{i}" for i in range(num_tasks)],
+#         fontsize=7,
+#         color="dimgray",
+#     )
+#     ax.vlines(
+#         x=np.arange(num_tasks) * 1e6,
+#         ymin=0.0,
+#         ymax=1,
+#         colors="tab:gray",
+#         alpha=0.3,
+#         linestyles="dashed",
+#         linewidths=0.7,
+#     )
+
+#     style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
+
+#     for i, method in enumerate(METHOD_ORDER):
+#         color = METHOD_COLORS[METHOD_ORDER[i]]
+#         ax = axes[i + 1]
+#         ax.vlines(
+#             x=np.arange(num_tasks) * 1e6,
+#             ymin=0.0,
+#             ymax=1,
+#             colors="tab:gray",
+#             alpha=0.3,
+#             linestyles="dashed",
+#             linewidths=0.7,
+#         )
+#         ax.set_xticks(
+#             np.arange(num_tasks) * 1e6,
+#             [f"{i}" for i in range(num_tasks)],
+#             fontsize=7,
+#             color="dimgray",
+#         )
+#         ax.set_ylabel(f"{METHOD_NAMES[method]}\n\nSuccess")
+
+#         for task_id in range(num_tasks):
+#             x = data[task_id][method]["global_step"]
+#             y = data[task_id][method]["success"]
+#             y_high = data[task_id][method]["std_high"]
+#             y_low = data[task_id][method]["std_low"]
+#             x_std = data[task_id][method]["std_x"]
+
+#             offset = task_id * total_timesteps
+
+#             ax.plot(x + offset, y, c=color, linewidth=0.8)
+
+#             ax.fill_between(
+#                 x_std + offset,
+#                 y_low,
+#                 y_high,
+#                 alpha=0.3,
+#                 color=color,
+#             )
+
+#         style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
+
+#     # only applied to the last `ax` (plot)
+#     ax.set_xlabel("Task ID")
+
+#     lines = [
+#         Line2D([0], [0], color=METHOD_COLORS[METHOD_ORDER[i]])
+#         for i in range(len(methods))
+#     ]
+#     fig.legend(
+#         lines,
+#         [METHOD_NAMES[m] for m in METHOD_ORDER],
+#         fancybox=False,
+#         frameon=False,
+#         loc="outside lower center",
+#         ncols=len(methods),
+#     )
+
+#     plt.savefig(save_name, pad_inches=0, bbox_inches="tight")
+#     plt.show()
+
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+
 def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
     methods = METHOD_ORDER
     num_tasks = len(data.keys())
@@ -447,22 +563,29 @@ def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
     ax.set_xlabel("Task ID")
 
     lines = [
-        Line2D([0], [0], color=METHOD_COLORS[METHOD_ORDER[i]])
+        Line2D([0], [0], color=METHOD_COLORS[METHOD_ORDER[i]] )
         for i in range(len(methods))
     ]
+    
+  # Adjust the position of the legend to the bottom outside the plot
     fig.legend(
         lines,
         [METHOD_NAMES[m] for m in METHOD_ORDER],
         fancybox=False,
         frameon=False,
-        loc="outside lower center",
-        ncols=len(methods),
+        loc="upper center",
+        ncol=5,  
+        bbox_to_anchor=(0.5, -0.001),  # Position legend below the plot
     )
+
+    # Improve layout to avoid overlapping and make space for the legend
+    plt.subplots_adjust(hspace=0.5, bottom=0.2)  # Adjust bottom to give space for legend
+    plt.tight_layout()
 
     plt.savefig(save_name, pad_inches=0, bbox_inches="tight")
     plt.show()
 
-
+    
 if __name__ == "__main__":
     args = parse_args()
 
@@ -494,12 +617,13 @@ if __name__ == "__main__":
     #
     # Compute forward transfer & final performance
     #
-    if os.path.exists(args.eval_results):
-        eval_results = process_eval(
-            pd.read_csv(args.eval_results), data, scores, f"ALE/{env}-v5"
-        )
-    else:
-        eval_results = None
+    # if os.path.exists(args.eval_results):
+    #     eval_results = process_eval(
+    #         pd.read_csv(args.eval_results), data, scores, f"ALE/{env}-v5"
+    #     )
+    # else:
+    #     eval_results = None
+    eval_results = None
 
     ft_data = compute_forward_transfer(data)
     compute_final_performance(data)
