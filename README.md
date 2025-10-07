@@ -15,48 +15,96 @@
   <img src="./assets/CKA_RL.png" alt="CKA-RL" width="700" align="center">
 </p>
 
-## 📰 News
-- *2025-09-18*: CKA-RL is accepted by NeurIPS2025.
+> **TL;DR:** **CKA-RL** introduces a **Continual Knowledge Adaptation** framework for reinforcement learning that maintains a **pool of task-specific knowledge vectors** and **dynamically reuses historical knowledge** to adapt to new tasks.  
 
-## ⚡ Quick Start 
-The project provides two separate requirement files for different experiment groups:
-- `experiments/atari/requirements.txt` -- dependencies for Atari experiments
-- `experiments/meta-world/requirements.txt` –- dependencies for Meta-World experiments
-> 💡 You only need to install the environment for the experiments you plan to run.
-```bash
-# Clone the repository
-git clone https://github.com/Fhujinwu/CKA-RL.git
-cd CKA-RL
+---
 
-# === Setup for Atari experiments ===
-conda create -n cka-rl-atari python=3.10 -y
-conda activate cka-rl-atari
-pip install -r experiments/atari/requirements.txt
+## ✨ Abstract
+Reinforcement Learning enables agents to learn optimal behaviors through interactions with environments. However, real-world environments are typically non-stationary, requiring agents to continuously adapt to new tasks and changing conditions. Although Continual Reinforcement Learning facilitates learning across multiple tasks, existing methods often suffer from catastrophic forgetting and inefficient knowledge utilization. To address these challenges, we propose **Continual Knowledge Adaptation for Reinforcement Learning (CKA-RL)**, which enables the accumulation and effective utilization of historical knowledge. Specifically, we introduce a **Continual Knowledge Adaptation** strategy, which involves maintaining a task-specific **knowledge vector pool** and dynamically using historical knowledge to adapt the agent to new tasks. This process mitigates catastrophic forgetting and enables efficient knowledge transfer across tasks by preserving and adapting critical model parameters.  Additionally, we propose an **Adaptive Knowledge Merging** mechanism that combines similar knowledge vectors to address scalability challenges, reducing memory requirements while ensuring the retention of essential knowledge. Experiments on three benchmarks demonstrate that **CKA-RL** outperforms state-of-the-art methods, achieving an improvement of **4.20%** in overall performance and **8.02%** in forward transfer.
 
-# === Setup for Meta-World experiments ===
-conda create -n cka-rl-meta python=3.10 -y
-conda activate cka-rl-meta
-pip install -r experiments/meta-world/requirements.txt
-```
+---
 
-## 🏋️ Training
-coming soon
+## 🚀 Quick Start 
 
-## ⚖️ Evaluation
-coming soon
+1. **Clone the repo**
+    ```bash
+    git clone https://github.com/Fhujinwu/CKA-RL.git
+    cd CKA-RL
+    ```
+
+2. **Create enviroments**
+    >💡 You only need to install the environment for the experiments you plan to run.  
+    >The project provides two separate requirement files for different experiment groups:  
+    > - `experiments/atari/requirements.txt` -- dependencies for Atari experiments
+    > - `experiments/meta-world/requirements.txt` –- dependencies for Meta-World experiments
+    ```bash
+    # === Setup for Atari experiments ===
+    conda create -n cka-rl-atari python=3.10 -y
+    conda activate cka-rl-atari
+    pip install -r experiments/atari/requirements.txt
+
+    # === Setup for Meta-World experiments ===
+    conda create -n cka-rl-meta python=3.10 -y
+    conda activate cka-rl-meta
+    pip install -r experiments/meta-world/requirements.txt
+    ```
+
+## ▶️ Usage
+
+### 🕹️ Atari Experiments
+1. **Run CKA-RL on a specific Atari environment**
+
+    ```bash
+    # Example: Run CKA-RL on the Atari environment "Freeway"
+    ATARI_ENV="ALE/Freeway-v5"     # Options: ALE/Freeway-v5, ALE/SpaceInvaders-v5
+    SEED=42
+
+    python run_experiments.py \
+        --method_type CKA-RL \
+        --env $ATARI_ENV \
+        --first-mode 0 \
+        --last-mode 7 \             # Use --last-mode 9 for SpaceInvaders
+        --seed $SEED \
+        --tag main
+    ```
+    > 🗂️ The training log and results will be automatically saved to:  
+    > `./experiments/atari/data/Freeway/main`
+
+2. **Process Results**
+
+    > ⚠️ Note: Before running the following scripts, make sure all methods (including baselines) have been executed — otherwise process_results.py may fail due to missing result files.
+    ```bash
+    # Step 1. Gather all results from experiment logs
+    python gather_rt_results.py \
+        --base_dir ./experiments/atari/data/Freeway/main \
+        --env Freeway             # Options: Freeway, SpaceInvaders
+
+    # Step 2. Process the aggregated results
+    python process_results.py \
+        --data-dir ./experiments/atari/data/Freeway/main
+    ```
+### 🌍 Meta-World Experiments
+
+🧩 Coming Soon — this section will include the detailed command-line usage for Meta-World experiments (training, evaluation, and result processing).
 
 ## 💬 Citation
-We gratefully acknowledge the following open-source contributions:  
+If you find our work useful, please consider citing:
 
-- [CompoNet](https://github.com/mikelma/componet)  
-- [Loss of Plasticity](https://github.com/shibhansh/loss-of-plasticity)  
-- [Mask-LRL](https://github.com/dlpbc/mask-lrl)  
-
-If you find our work useful, please consider giving our repository a 🌟 and citing our paper: 
-
-```text
-
+```bibtex
+@inproceedings{hu2025CKARL,
+  title={Continual Knowledge Adaptation for Reinforcement Learning},
+  author={Hu, Jinwu and Lian, Zihao and Wen, Zhiquan and Li, Chenghao and Chen, Guohao and Wen, Xutao and Xiao, Bin and Tan, Mingkui},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2025}
+}
 ```
 
-## ⭐ Star History
-![Star History Chart](https://api.star-history.com/svg?repos=Fhujinwu/CKA-RL&type=Date)
+## 🙏 Acknowledgements
+We gratefully acknowledge the following open-source contributions:  
+
+- [CompoNet](https://github.com/mikelma/componet) for baseline codebase
+- [Loss of Plasticity](https://github.com/shibhansh/loss-of-plasticity) for CbpNet implementation
+- [Mask-LRL](https://github.com/dlpbc/mask-lrl) for MaskNet implementation
+- [crelu-pytorch](https://github.com/timoklein/crelu-pytorch) for CReLU implementation
+
+Our work builds upon these open-source efforts; we thank the authors for their valuable contributions.

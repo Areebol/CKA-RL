@@ -28,7 +28,7 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "Baseline": "Baseline",
-    "Finetune": "FT",
+    "Finetune": "Finetune",
     "CompoNet": "CompoNet",
     "ProgNet": "ProgressiveNet",
     "PackNet": "PackNet",
@@ -248,54 +248,6 @@ def compute_final_performance(data):
             tablefmt="rounded_outline",
         )
     )
-
-def process_eval(df, data, success_scores, env):
-    eval_results = {}
-    for method in df["algorithm"].unique():
-        print(
-            f"\n** Final performance of the \x1b[31;1m{METHOD_NAMES[method]}\x1b[0m method:"
-        )
-
-        perf_total = []
-        forg_total = []
-        perf_by_task = []
-        forg_by_task = []
-        for task_id in sorted(success_scores.keys()):
-            sel = df[
-                (df["test mode"] == task_id)
-                & (df["environment"] == env)
-                & (df["algorithm"] == method)
-            ]
-            s = sel["ep ret"].values >= success_scores[task_id]
-
-            # the performance when the current task was task_id
-            past_perf = data[task_id]["Finetune"]["final_success"]
-
-            perf_total += list(s)
-            forg_total += list(past_perf - s)
-
-            perf = round(s.mean(), 4)
-            perf_std = round(s.std(), 4)
-            forg = round((past_perf - s).mean(), 2)
-            forg_std = round((past_perf - s).std(), 2)
-            print(
-                f"  - Task {task_id} => Perf.: {perf} [{perf_std}], Forg.: {forg} [{forg_std}]"
-            )
-
-            perf_by_task.append((perf, perf_std))
-            forg_by_task.append((forg, forg_std))
-
-        perf = round(np.mean(perf_total), 2)
-        perf_std = round(np.std(perf_total), 2)
-        forg = round(np.mean(forg_total), 2)
-        forg_std = round(np.std(forg_total), 2)
-        print(f"  + Avg: Perf.: {perf} [{perf_std}], Forg.: {forg} [{forg_std}]")
-
-        eval_results[method] = {}
-        eval_results[method]["perf"] = perf_by_task
-        eval_results[method]["forg"] = forg_by_task
-
-    return eval_results
 
 if __name__ == "__main__":
     args = parse_args()
