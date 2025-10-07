@@ -33,13 +33,9 @@ from models import (
     CnnCompoNetAgent,
     ProgressiveNetAgent,
     PackNetAgent,
-    CnnTvNetAgent, 
-    FuseNetAgent,
-    FuseNetwMergeAgent,
+    CkaRlAgent,
     CnnMaskAgent,
     CnnCbpAgent,
-    # CSPAgent,
-    RewireAgent,
     CReLUsAgent,
 )
 
@@ -149,11 +145,11 @@ class Args:
     global_alpha: bool = True # True or False
     """whether to use global alpha for whole agent"""
     alpha_init: str = "Randn" # "Randn" "Major" "Uniform"
-    """how to init alpha in FuseNet"""
+    """how to init alpha in CKA-RL"""
     alpha_major: float = 0.6 
     """init major""" # Major alpha init, theta_{i-1} will be init to log(major) + C, others will be uniform
     pool_size: int = 3
-    """pool size for FuseNetwMerge"""
+    """pool size for knowledge vector pool in CKA-RL"""
 
     task_id: int = 0
     """task id for the current task"""
@@ -270,30 +266,10 @@ if __name__ == "__main__":
                 restart_actor_critic=True,
                 freeze_bias=True,
             ).to(device)
-    elif args.method_type == "TvNet":
-        agent = CnnTvNetAgent(envs, prevs_paths=args.prev_units, 
-                              map_location=device).to(device)
-    elif args.method_type == "FuseNet":
-        base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
-        encoder_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
-        agent = FuseNetAgent(envs, 
-                             base_dir=base_dir, 
-                             prevs_paths=args.prev_units,
-                             alpha_factor=args.alpha_factor,
-                             fix_alpha=args.fix_alpha,
-                             delta_theta_mode=args.delta_theta_mode,
-                             fuse_encoder=args.fuse_encoder,
-                             fuse_actor=args.fuse_actor,
-                             reset_actor=args.reset_actor,
-                             global_alpha=args.global_alpha,
-                             alpha_init=args.alpha_init,
-                             alpha_major=args.alpha_major,
-                             map_location=device).to(device)
-        agent.log_alphas()
-    elif args.method_type == "FuseNetwMerge":
+    elif args.method_type == "CKA-RL":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         latest_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
-        agent = FuseNetwMergeAgent(envs, 
+        agent = CkaRlAgent(envs, 
                              base_dir=base_dir, 
                              latest_dir=latest_dir,
                              alpha_factor=args.alpha_factor,
@@ -325,16 +301,6 @@ if __name__ == "__main__":
             ).to(device)
         else:
             agent = CnnCbpAgent(envs).to(device)
-    elif args.method_type == "CSP":
-        raise NotImplementedError
-    elif args.method_type == "Rewire":
-        if len(args.prev_units) > 0:
-            agent = RewireAgent.load(
-                args.prev_units[0], envs, load_critic=False, reset_actor=False
-            ).to(device)
-        else:
-            agent = RewireAgent(envs).to(device)
-        agent.set_task()
     elif args.method_type == "CReLUs":
         if len(args.prev_units) > 0:
             agent = CReLUsAgent.load(
@@ -359,7 +325,7 @@ if __name__ == "__main__":
         GnT = GnT(net=agent.actor.net, opt=optimizer,
                     replacement_rate=1e-3, decay_rate=0.99, device=device,
                     maturity_threshold=1000, util_type="contribution")
-    if ("FuseNet" in args.method_type) and args.task_id > 1:
+    if ("CKA" in args.method_type) and args.task_id > 1:
         logger.info(f"Create Alpha Optimizer for alpha training - learning rate: {args.alpha_learning_rate}")
         ao_exist = True
         alpha_params = [param for name, param in agent.named_parameters() if param.requires_grad and "alpha" in name]
@@ -416,7 +382,7 @@ if __name__ == "__main__":
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, prevs_to_noise=args.prevs_to_noise
                     )
-                elif "FuseNet" in args.method_type:
+                elif "CKA-RL" in args.method_type:
                     action, logprob, _, value = agent.get_action_and_value(
                         next_obs / 255.0, 
                         log_writter=writer, 
@@ -592,18 +558,6 @@ if __name__ == "__main__":
         # show SLS + return
         loop.set_postfix(SPS=int(global_step / (time.time() - start_time)),R=logs["episodic_return"][-1])
         
-        # log model's weight and grad
-        # for name, param in agent.named_parameters():
-        #     if param.grad is not None:
-        #         writer.add_histogram(tag=name+'_grad', values=param.grad, global_step=global_step)
-        #     writer.add_histogram(tag=name+'_data', values=param.data, global_step=global_step)
-
-    if args.method_type == "FuseNet":
-        agent.log_alphas()
-    # elif args.method_type == "MaskNet":
-    #     agent.consolidate_mask()
-    elif args.method_type == "Rewire":
-        agent.set_task(-1)
     envs.close()
     writer.close()
     
@@ -614,9 +568,7 @@ if __name__ == "__main__":
     df = pd.DataFrame(logs)
     if args.tag is not None:
         log_dir = f"./data/{env_name}/{args.tag}/{args.method_type}/{args.task_id}"  
-        # logger.info(f"saved log return to {log_dir}/returns.csv") # ./data/Freeway/tag/FuseNet/mode/returns.csv
         os.makedirs(log_dir, exist_ok=True)
         df.to_csv(f"{log_dir}/returns.csv", index=False)
     
-        # logger.info(f"Saving trained agent to `./agents/{env_name}/{args.tag}/{run_name}`")
         agent.save(dirname=f"./agents/{env_name}/{args.tag}/{run_name}") # ./agents/Freeway/tag/run_name

@@ -17,7 +17,7 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
         torch.nn.init.zeros_(layer.biaes)
     return layer
 
-class FuseNetwMergeAgent(nn.Module):
+class CkaRlAgent(nn.Module):
     def __init__(self, envs, base_dir, latest_dir, 
                  fix_alpha: bool = False,
                  alpha_factor: float = 1/100,
@@ -53,7 +53,7 @@ class FuseNetwMergeAgent(nn.Module):
         
         # Actor 's fuse or not 
         if self.fuse_actor:
-            logger.debug("FuseNet fuse actor")
+            logger.debug("CKA-RL adapt actor")
             self.actor = FuseActor( hidden_dim=512,
                                     layer_init=layer_init,
                                     n_actions=envs.single_action_space.n,
@@ -121,7 +121,7 @@ class FuseNetwMergeAgent(nn.Module):
         torch.save(self.critic, f"{dirname}/critic.pt")
 
     def load(dirname, envs, load_critic=True, reset_actor=False, map_location=None):
-        model = FuseNetwMergeAgent(envs, None, None,)
+        model = CkaRlAgent(envs, None, None,)
         model.network = torch.load(f"{dirname}/encoder.pt", map_location=map_location)
         if load_critic:
             model.critic = torch.load(f"{dirname}/critic.pt", map_location=map_location)
@@ -131,7 +131,6 @@ class FuseNetwMergeAgent(nn.Module):
 
     def merge_actor_weight(self):
         if self.alpha is None:
-            logger.warning("Not alpha exist in FuseNetAgent, not merge")
             return 
         
         logger.info("merge actor's weight")
@@ -139,7 +138,6 @@ class FuseNetwMergeAgent(nn.Module):
 
     def merge_encoder_weight(self):
         if self.alpha is None or self.fuse_encoder is False:
-            logger.warning("Not alpha exist in FuseNetAgent or Not Fuse Encoder, not merge")
             return 
         
         logger.info("merge encoder's weight")

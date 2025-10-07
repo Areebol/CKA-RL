@@ -1,2 +1,0 @@
-python process_results.py --data-dir data/Freeway/Freeway --eval-results data/Freeway/eval/eval_results.csv 
-# python process_results.py --data-dir data/SpaceInvaders/BestResults --eval-results data/Freeway/eval/eval_results.csv 

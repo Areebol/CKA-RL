@@ -1,14 +1,11 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import pathlib
 import argparse
 from tabulate import tabulate
 import sys, os
 
 sys.path.append("../../")
-from utils import style
 
 SETTINGS = {
     "SpaceInvaders": dict(
@@ -31,47 +28,15 @@ SETTINGS = {
 
 METHOD_NAMES = {
     "Baseline": "Baseline",
-    # "Finetune": "FT",
+    "Finetune": "FT",
     "CompoNet": "CompoNet",
-    # "ProgNet": "ProgressiveNet",
-    # "PackNet": "PackNet",
-    "FuseNet": "CKA-RL",
-    # "FuseNetwMerge": "CKA-RL",
-    # "CReLUs": "CReLUs",
-    # "MaskNet": "MaskNet",
-    # "Rewire": "Rewire",
-    # "CbpNet": "CbpNet",
+    "ProgNet": "ProgressiveNet",
+    "PackNet": "PackNet",
+    "CKA": "CKA-RL",
+    "CReLUs": "CReLUs",
+    "MaskNet": "MaskNet",
+    "CbpNet": "CbpNet",
 }
-
-METHOD_COLORS = {
-    "Baseline": "darkgray",
-    # "Finetune": "tab:blue",
-    "CompoNet": "tab:green",
-    # "ProgNet": "tab:orange",
-    # "PackNet": "tab:purple",
-    "FuseNet": "tab:red",
-    # "FuseNetwMerge": "tab:brown",
-    # "CReLUs": "tab:pink",
-    # "MaskNet": "tab:cyan",
-    # "Rewire": "tab:olive",
-    # "CbpNet": "tab:gray",
-}
-
-METHOD_ORDER = ["Baseline", 
-                # "Finetune", 
-                # "ProgNet", 
-                # "PackNet",  
-                # "MaskNet",
-                # "CReLUs",
-                "CompoNet",
-                # "CbpNet", 
-                "FuseNet",
-                # "FuseNetwMerge",
-                ]
-# METHOD_ORDER = ["baseline", 
-#                 "FuseNet"
-#                 ]
-
 
 def parse_args():
     # fmt: off
@@ -109,35 +74,9 @@ def compute_success(
     ma_w_extra=30,
     ma_std_extra=10,
 ):
-    """Takes the DataFrame of the CSV file form W&B and returns a new
-    dataframe with the success of each algorithm in every timestep.
-
-    df           -- DataFrame to process.
-
-    ma_w_1       -- Window size of the moving average applied to the
-                    return curves before computing the success score.
-
-    num_pts_sc   -- Number of points to use to compute the success score.
-
-    sc_percent   -- Percentage of the average final return to take as
-                    the success score.
-
-    chunk_avg_w  -- Window size of the chunk average smoothing applied to
-                    the success curves.
-
-    ma_w_extra   -- Window size of the MA smoothing applied to the success
-                    curves.
-    ma_std_extra -- Window size of the extra MA applied to the std of
-                    the success curves.
-    """
     data_cols = df.columns[df.columns.str.endswith("episodic_return")]
-    # get the name of the method from the column's name
     methods = [col.split("-")[0] for col in data_cols]
 
-    # compute the success_score automatically as
-    # the `sc_percent` % of the average return of
-    # the last 100 episodes of all algorithms in
-    # the dataframe
     rets = []
     returns = {}
     for method, col in zip(methods, data_cols):
@@ -181,14 +120,6 @@ def compute_success(
         y_max = np.insert(y_max, 0, 0.0)
         x_std = np.insert(x_std, 0, 0.0)
 
-        # plt.plot(x, y, label=method)
-        # plt.fill_between(
-        #     x_std,
-        #     y_min,
-        #     y_max,
-        #     alpha=0.3
-        # )
-
         d = {}
         d["global_step"] = x
         d["success"] = y
@@ -200,12 +131,7 @@ def compute_success(
 
         data[method] = d
 
-    # plt.gca()
-    # plt.legend()
-    # plt.show()
-
     return data, success_score
-
 
 def compute_forward_transfer(data):
     baseline_method = "Baseline"
@@ -292,7 +218,6 @@ def compute_forward_transfer(data):
 
     return ft_data
 
-
 def compute_final_performance(data):
     methods = list(METHOD_NAMES.keys())
     table = []
@@ -323,10 +248,6 @@ def compute_final_performance(data):
             tablefmt="rounded_outline",
         )
     )
-    print(
-        "* NOTE: This is not the final performance in the case of the Finetune method, \nbut the performance at the time of solving each task.\n"
-    )
-
 
 def process_eval(df, data, success_scores, env):
     eval_results = {}
@@ -335,7 +256,6 @@ def process_eval(df, data, success_scores, env):
             f"\n** Final performance of the \x1b[31;1m{METHOD_NAMES[method]}\x1b[0m method:"
         )
 
-        # per_task = {}
         perf_total = []
         forg_total = []
         perf_by_task = []
@@ -377,223 +297,11 @@ def process_eval(df, data, success_scores, env):
 
     return eval_results
 
-
-# def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
-#     methods = METHOD_ORDER
-#     num_tasks = len(data.keys())
-#     fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 12))
-
-#     #
-#     # Plot all the method together
-#     #
-#     ax = axes[0]
-#     for i in range(num_tasks):
-#         for method in methods:
-#             offset = i * total_timesteps
-#             ax.plot(
-#                 data[i][method]["global_step"] + offset,
-#                 data[i][method]["success"],
-#                 c=METHOD_COLORS[method],
-#                 linewidth=0.8,
-#             )
-#             ax.set_ylabel("Success")
-
-#     ax.set_xticks(
-#         np.arange(num_tasks) * 1e6,
-#         [f"{i}" for i in range(num_tasks)],
-#         fontsize=7,
-#         color="dimgray",
-#     )
-#     ax.vlines(
-#         x=np.arange(num_tasks) * 1e6,
-#         ymin=0.0,
-#         ymax=1,
-#         colors="tab:gray",
-#         alpha=0.3,
-#         linestyles="dashed",
-#         linewidths=0.7,
-#     )
-
-#     style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-#     for i, method in enumerate(METHOD_ORDER):
-#         color = METHOD_COLORS[METHOD_ORDER[i]]
-#         ax = axes[i + 1]
-#         ax.vlines(
-#             x=np.arange(num_tasks) * 1e6,
-#             ymin=0.0,
-#             ymax=1,
-#             colors="tab:gray",
-#             alpha=0.3,
-#             linestyles="dashed",
-#             linewidths=0.7,
-#         )
-#         ax.set_xticks(
-#             np.arange(num_tasks) * 1e6,
-#             [f"{i}" for i in range(num_tasks)],
-#             fontsize=7,
-#             color="dimgray",
-#         )
-#         ax.set_ylabel(f"{METHOD_NAMES[method]}\n\nSuccess")
-
-#         for task_id in range(num_tasks):
-#             x = data[task_id][method]["global_step"]
-#             y = data[task_id][method]["success"]
-#             y_high = data[task_id][method]["std_high"]
-#             y_low = data[task_id][method]["std_low"]
-#             x_std = data[task_id][method]["std_x"]
-
-#             offset = task_id * total_timesteps
-
-#             ax.plot(x + offset, y, c=color, linewidth=0.8)
-
-#             ax.fill_between(
-#                 x_std + offset,
-#                 y_low,
-#                 y_high,
-#                 alpha=0.3,
-#                 color=color,
-#             )
-
-#         style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-#     # only applied to the last `ax` (plot)
-#     ax.set_xlabel("Task ID")
-
-#     lines = [
-#         Line2D([0], [0], color=METHOD_COLORS[METHOD_ORDER[i]])
-#         for i in range(len(methods))
-#     ]
-#     fig.legend(
-#         lines,
-#         [METHOD_NAMES[m] for m in METHOD_ORDER],
-#         fancybox=False,
-#         frameon=False,
-#         loc="outside lower center",
-#         ncols=len(methods),
-#     )
-
-#     plt.savefig(save_name, pad_inches=0, bbox_inches="tight")
-#     plt.show()
-
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-import numpy as np
-
-def plot_data(data, save_name="plot.pdf", total_timesteps=1e6):
-    methods = METHOD_ORDER
-    num_tasks = len(data.keys())
-    fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 12))
-
-    #
-    # Plot all the method together
-    #
-    ax = axes[0]
-    for i in range(num_tasks):
-        for method in methods:
-            offset = i * total_timesteps
-            ax.plot(
-                data[i][method]["global_step"] + offset,
-                data[i][method]["success"],
-                c=METHOD_COLORS[method],
-                linewidth=0.8,
-            )
-            ax.set_ylabel("Success")
-
-    ax.set_xticks(
-        np.arange(num_tasks) * 1e6,
-        [f"{i}" for i in range(num_tasks)],
-        fontsize=7,
-        color="dimgray",
-    )
-    ax.vlines(
-        x=np.arange(num_tasks) * 1e6,
-        ymin=0.0,
-        ymax=1,
-        colors="tab:gray",
-        alpha=0.3,
-        linestyles="dashed",
-        linewidths=0.7,
-    )
-
-    style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    for i, method in enumerate(METHOD_ORDER):
-        color = METHOD_COLORS[METHOD_ORDER[i]]
-        ax = axes[i + 1]
-        ax.vlines(
-            x=np.arange(num_tasks) * 1e6,
-            ymin=0.0,
-            ymax=1,
-            colors="tab:gray",
-            alpha=0.3,
-            linestyles="dashed",
-            linewidths=0.7,
-        )
-        ax.set_xticks(
-            np.arange(num_tasks) * 1e6,
-            [f"{i}" for i in range(num_tasks)],
-            fontsize=7,
-            color="dimgray",
-        )
-        ax.set_ylabel(f"{METHOD_NAMES[method]}\n\nSuccess")
-
-        for task_id in range(num_tasks):
-            x = data[task_id][method]["global_step"]
-            y = data[task_id][method]["success"]
-            y_high = data[task_id][method]["std_high"]
-            y_low = data[task_id][method]["std_low"]
-            x_std = data[task_id][method]["std_x"]
-
-            offset = task_id * total_timesteps
-
-            ax.plot(x + offset, y, c=color, linewidth=0.8)
-
-            ax.fill_between(
-                x_std + offset,
-                y_low,
-                y_high,
-                alpha=0.3,
-                color=color,
-            )
-
-        style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    # only applied to the last `ax` (plot)
-    ax.set_xlabel("Task ID")
-
-    lines = [
-        Line2D([0], [0], color=METHOD_COLORS[METHOD_ORDER[i]] )
-        for i in range(len(methods))
-    ]
-    
-  # Adjust the position of the legend to the bottom outside the plot
-    fig.legend(
-        lines,
-        [METHOD_NAMES[m] for m in METHOD_ORDER],
-        fancybox=False,
-        frameon=False,
-        loc="upper center",
-        ncol=5,  
-        bbox_to_anchor=(0.5, -0.001),  # Position legend below the plot
-    )
-
-    # Improve layout to avoid overlapping and make space for the legend
-    plt.subplots_adjust(hspace=0.5, bottom=0.2)  # Adjust bottom to give space for legend
-    plt.tight_layout()
-
-    plt.savefig(save_name, pad_inches=0, bbox_inches="tight")
-    plt.show()
-
-    
 if __name__ == "__main__":
     args = parse_args()
 
     env = os.path.basename(args.data_dir)
 
-    #
-    # Compute the success curve of each method in every task
-    #
     data = {}
     scores = {}
     for path in pathlib.Path(args.data_dir).glob("*.csv"):
@@ -614,46 +322,8 @@ if __name__ == "__main__":
     print("\n** Success scores used:")
     [print(round(scores[t], 4), end=" ") for t in sorted(scores.keys())]
     print()
-    #
-    # Compute forward transfer & final performance
-    #
-    # if os.path.exists(args.eval_results):
-    #     eval_results = process_eval(
-    #         pd.read_csv(args.eval_results), data, scores, f"ALE/{env}-v5"
-    #     )
-    # else:
-    #     eval_results = None
+
     eval_results = None
 
     ft_data = compute_forward_transfer(data)
     compute_final_performance(data)
-
-    fname = f"summary_data_{env}.csv"
-    with open(fname, "w") as f:
-        f.write("env,method,task id,perf,perf std,ft,forg,forg std\n")
-        for task_id in sorted(list(data.keys())):
-            for method in data[0].keys():
-                ft = ft_data[task_id][method]
-                if eval_results is not None and method in eval_results.keys():
-                    perf, perf_std = eval_results[method]["perf"][task_id]
-                    forg, forg_std = eval_results[method]["forg"][task_id]
-                    if METHOD_NAMES[method] == "Finetune":
-                        n_perf = data[task_id][method]["final_success"]
-                        n_perf_std = data[task_id][method]["final_success_std"]
-                        f.write(
-                            f"{env},Finetune-N,{task_id},{n_perf},{n_perf_std},{ft},0,0\n"
-                        )
-                else:
-                    perf = data[task_id][method]["final_success"]
-                    perf_std = data[task_id][method]["final_success_std"]
-                    forg, forg_std = 0, 0
-                f.write(
-                    f"{env},{METHOD_NAMES[method]},{task_id},{perf},{perf_std},{ft},{forg},{forg_std}\n"
-                )
-    print(f"\n*** A summary of the results has been saved to `{fname}` ***\n")
-
-    #
-    # Plotting
-    #
-    env = args.data_dir.split("/")[-1]
-    plot_data(data, save_name=f"success_curves_{env}.pdf")

@@ -6,8 +6,8 @@ from torch.distributions.categorical import Categorical
 from .cnn_encoder import CnnEncoder
 import sys, os
 
-sys.path.append(os.path.dirname(__file__) + "/../../../")
-from componet import CompoNet, FirstModuleWrapper
+sys.path.append(os.path.dirname(__file__) + "/../")
+from model_utils import CompoNet, FirstModuleWrapper
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
