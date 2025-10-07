@@ -38,12 +38,12 @@ Reinforcement Learning enables agents to learn optimal behaviors through interac
     > - `experiments/atari/requirements.txt` -- dependencies for Atari experiments
     > - `experiments/meta-world/requirements.txt` –- dependencies for Meta-World experiments
     ```bash
-    # === Setup for Atari experiments ===
+    # === Setup for 🕹️ Atari experiments ===
     conda create -n cka-rl-atari python=3.10 -y
     conda activate cka-rl-atari
     pip install -r experiments/atari/requirements.txt
 
-    # === Setup for Meta-World experiments ===
+    # === Setup for 🌍 Meta-World experiments ===
     conda create -n cka-rl-meta python=3.10 -y
     conda activate cka-rl-meta
     pip install -r experiments/meta-world/requirements.txt
@@ -59,6 +59,7 @@ Reinforcement Learning enables agents to learn optimal behaviors through interac
     ATARI_ENV="ALE/Freeway-v5"     # Options: ALE/Freeway-v5, ALE/SpaceInvaders-v5
     SEED=42
 
+    cd experiments/atari/
     python run_experiments.py \
         --method_type CKA-RL \
         --env $ATARI_ENV \
@@ -83,9 +84,39 @@ Reinforcement Learning enables agents to learn optimal behaviors through interac
     python process_results.py \
         --data-dir ./experiments/atari/data/Freeway/main
     ```
-### 🌍 Meta-World Experiments
 
-🧩 Coming Soon — this section will include the detailed command-line usage for Meta-World experiments (training, evaluation, and result processing).
+### 🌍 Meta-World Experiments
+1. **Run CKA-RL on a meta-world environment**
+
+    ```bash
+    # Example: Run CKA-RL
+    SEED=42
+
+    cd experiments/meta-world/
+    python run_experiments.py \
+        --method_type CKA-RL \
+        --env $ATARI_ENV \
+        --first-mode 0 \
+        --last-mode 7 \             # Use --last-mode 9 for SpaceInvaders
+        --seed $SEED \
+        --tag main
+    ```
+    > 🗂️ The training log and results will be automatically saved to:  
+    > `./experiments/atari/data/Freeway/main`
+
+2. **Process Results**
+
+    > ⚠️ Note: Before running the following scripts, make sure all methods (including baselines) have been executed — otherwise process_results.py may fail due to missing result files.
+    ```bash
+    # Step 1. Gather all results from experiment logs
+    python gather_rt_results.py \
+        --base_dir ./experiments/atari/data/Freeway/main \
+        --env Freeway             # Options: Freeway, SpaceInvaders
+
+    # Step 2. Process the aggregated results
+    python process_results.py \
+        --data-dir ./experiments/atari/data/Freeway/main
+    ```
 
 ## 💬 Citation
 If you find our work useful, please consider citing:
@@ -102,9 +133,9 @@ If you find our work useful, please consider citing:
 ## 🙏 Acknowledgements
 We gratefully acknowledge the following open-source contributions:  
 
-- [CompoNet](https://github.com/mikelma/componet) for baseline codebase
-- [Loss of Plasticity](https://github.com/shibhansh/loss-of-plasticity) for CbpNet implementation
-- [Mask-LRL](https://github.com/dlpbc/mask-lrl) for MaskNet implementation
+- [componet](https://github.com/mikelma/componet) for baseline codebase
+- [loss-of-plasticity](https://github.com/shibhansh/loss-of-plasticity) for CbpNet implementation
+- [mask-lrl](https://github.com/dlpbc/mask-lrl) for MaskNet implementation
 - [crelu-pytorch](https://github.com/timoklein/crelu-pytorch) for CReLU implementation
 
 Our work builds upon these open-source efforts; we thank the authors for their valuable contributions.

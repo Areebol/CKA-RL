@@ -15,8 +15,8 @@ import tyro
 import pathlib
 from torch.utils.tensorboard import SummaryWriter
 from typing import Literal, Optional, Tuple
-from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, FuseNetAgent, FuseMergeNetAgent, MaskNetAgent, RewireAgent, CbpAgent, CReLUsAgent
-from tasks import get_task, get_task_name
+from models import shared, SimpleAgent, CompoNetAgent, PackNetAgent, ProgressiveNetAgent, CkaRlAgent, MaskNetAgent, CbpAgent, CReLUsAgent
+from tasks import get_task
 from utils.AdamGnT import AdamGnT
 from stable_baselines3.common.buffers import ReplayBuffer
 from models.cbp_modules import GnT
@@ -24,7 +24,7 @@ from models.cbp_modules import GnT
 
 @dataclass
 class Args:
-    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire", "creus"]
+    model_type: Literal["simple", "finetune", "componet", "packnet", "prognet", "cka-rl", "masknet", "cbpnet", "crelus"]
     """The name of the NN model to use for the agent"""
     save_dir: Optional[str] = None
     """If provided, the model will be saved in the given directory"""
@@ -85,16 +85,10 @@ class Args:
     """automatic tuning of the entropy coefficient"""
     tag: str = "Debug"
     """experiment tag"""
-    fuse_shared: bool = True
-    """fuse shared"""
-    fuse_heads: bool = True
-    """fuse heads"""
-    pool_size: int = 4
+    pool_size: int = 9
     """pool size"""
     encoder_from_base: bool = False
     """load encoder from base_dir"""
-    select_by_success: int = 0
-    """select by success"""
 
 def make_env(task_id):
     def thunk():
@@ -281,29 +275,16 @@ if __name__ == "__main__":
             prev_paths=args.prev_units,
             map_location=device,
         ).to(device)
-    elif args.model_type == "fusenet":
-        if len(args.prev_units) > 0:
-            base_dir = args.prev_units[0]
-        else:
-            base_dir = None
-        model = FuseNetAgent(
-            base_dir = base_dir,
-            obs_dim=obs_dim,
-            act_dim=act_dim,
-            prevs_paths=args.prev_units,
-            fuse_shared=args.fuse_shared,
-            fuse_heads=args.fuse_heads,
-        ).to(device)
-    elif args.model_type == "fusenet_merge":
+    elif args.model_type == "cka-rl":
         base_dir = args.prev_units[0] if len(args.prev_units) > 0 else None
         latest_dir = args.prev_units[-1] if len(args.prev_units) > 0 else None
-        model = FuseMergeNetAgent(
+        model = CkaRlAgent(
             base_dir=base_dir,
             latest_dir=latest_dir,
             obs_dim=obs_dim,
             act_dim=act_dim,
-            fuse_shared=args.fuse_shared,
-            fuse_heads=args.fuse_heads,
+            fuse_shared=False,
+            fuse_heads=True,
             pool_size=args.pool_size,
             encoder_from_base=args.encoder_from_base,
         )
@@ -331,19 +312,7 @@ if __name__ == "__main__":
                 args.prev_units[0],
                 map_location=device,
             ).to(device)
-    elif args.model_type == 'rewire':
-        if len(args.prev_units) == 0:
-            model = RewireAgent(
-                obs_dim=obs_dim,
-                act_dim=act_dim
-                ).to(device)
-        else:
-            model = RewireAgent.load(
-                args.prev_units[0],
-                map_location=device,
-            ).to(device)
-        model.set_task()
-    elif args.model_type == "creus":
+    elif args.model_type == "crelus":
         if len(args.prev_units) == 0:
             model = CReLUsAgent(
                 obs_dim=obs_dim,

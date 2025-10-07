@@ -3,9 +3,7 @@ from .simple import SimpleAgent
 from .compo import CompoNetAgent
 from .packnet import PackNetAgent
 from .prognet import ProgressiveNetAgent
-from .fusenet import FuseNetAgent
-from .fusenet_merge import FuseMergeNetAgent
+from .cka_rl import CkaRlAgent
 from .masknet import MaskNetAgent
-from .rewire import RewireAgent
 from .cbpnet import CbpAgent
-from .creus import CReLUsAgent
+from .crelus import CReLUsAgent

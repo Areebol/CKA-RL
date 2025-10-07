@@ -3,11 +3,9 @@ import pandas as pd
 import pathlib
 from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import os, sys
 import argparse
-
+from tabulate import tabulate
 
 METHOD_NAMES = {
     "simple": "Baseline",
@@ -15,9 +13,8 @@ METHOD_NAMES = {
     "componet": "CompoNet",
     "prognet": "ProgressiveNet",
     "packnet": "PackNet",
-    "fusenet": "FuseNet",
+    "cka": "CKA-RL",
     "masknet": "MaskNet",
-    "rewire": "Rewire",
     "cbpnet": "CBP",
 }
 
@@ -69,9 +66,6 @@ def parse_tensorboard(path, scalars, single_pts=[]):
     if sum([s not in ea.Tags()["scalars"] for s in scalars]) > 0:
         print(f"** Scalar not found. Skipping file {path}")
         return None
-    # assert all(
-    #     s in ea.Tags()["scalars"] for s in scalars
-    # ), f"some scalars were not found in the event accumulator: {ea.Tags()['scalars']}"
 
     md = parse_metadata(ea)
 
@@ -335,7 +329,6 @@ def process_eval(df, perf_data):
 
 if __name__ == "__main__":
     sys.path.append("../../")
-    # from utils import style
 
     args = parse_args()
 

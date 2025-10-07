@@ -13,7 +13,6 @@ method_choices = ["Baseline",         # F1
                   "CKA-RL",           # CKA-RL
                   "MaskNet",          # MaskNet
                   "CbpNet",           # CbpNet
-                  "Rewire",           # Rewiring Neuron NIPS 2023 
                   "CReLUs",           # Concatenated ReLUs CoLLAs 2023 
                   ]
 
@@ -77,7 +76,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
     save_dir = f"agents/{env_name}/{args.tag}"
     params = f"--method-type={method_type} --env-id={args.env} --seed={seed}"
     params += f" --mode={task_id}"
-    params += f" --task_id={i}"
+    params += f" --task_id={task_id}"
     params += f" --tag={args.tag}"
     params += f" --total_timesteps={args.total_timesteps}"
     params += f" --delta_theta_mode={args.delta_theta_mode}"
@@ -114,7 +113,7 @@ for i, task_id in enumerate(modes[first_idx:last_idx+1]):
             for j in range(len(modes[: modes.index(task_id)])):
                 params += f" {save_dir}/{run_name(j)}"
         # single previous module
-        elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet", "Rewire", "CReLUs"]:
+        elif args.method_type in ["Finetune", "PackNet", "MaskNet", "CbpNet", "CReLUs"]:
             params += f" --prev-units {save_dir}/{run_name(i-1)}"
             
     # Launch experiment

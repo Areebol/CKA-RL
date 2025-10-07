@@ -6,8 +6,8 @@ from .shared_arch import shared
 
 import sys, os
 
-sys.path.append(os.path.dirname(__file__) + "/../../../")
-from componet import CompoNet, FirstModuleWrapper
+sys.path.append(os.path.dirname(__file__) + "/..")
+from utils.CompoNet import CompoNet, FirstModuleWrapper
 
 
 def net(input_dim, output_dim):

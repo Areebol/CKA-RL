@@ -15,8 +15,7 @@ import pathlib
 from loguru import logger
 from tqdm import tqdm
 from models.cbp_modules import GnT
-from model_utils.AdamGnT import AdamGnT
-# from task_utils import get_method_type
+from utils.AdamGnT import AdamGnT
 
 from torch.utils.tensorboard import SummaryWriter
 

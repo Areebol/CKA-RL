@@ -43,8 +43,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=str, default="data/Freeway",
         help="path to the directory where the CSV of each task is stored")
-    parser.add_argument("--eval-results", type=str, default=None, #"data/eval_results.csv",
-        help="path to the file where the CSV with the evaluation results is located")
     # fmt: on
     return parser.parse_args()
 
@@ -274,8 +272,6 @@ if __name__ == "__main__":
     print("\n** Success scores used:")
     [print(round(scores[t], 4), end=" ") for t in sorted(scores.keys())]
     print()
-
-    eval_results = None
 
     ft_data = compute_forward_transfer(data)
     compute_final_performance(data)

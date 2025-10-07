@@ -6,5 +6,4 @@ from .packnet import PackNetAgent
 from .cka_rl import CkaRlAgent
 from .masknet import CnnMaskAgent
 from .cbpnet import CnnCbpAgent
-from .rewire import RewireAgent
-from .creus import CReLUsAgent
+from .crelus import CReLUsAgent

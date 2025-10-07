@@ -6,7 +6,7 @@ from .shared_arch import shared
 from loguru import logger
 import numpy as np
 
-class FuseMergeNetAgent(nn.Module):
+class CkaRlAgent(nn.Module):
     def __init__(self, 
                  obs_dim, 
                  act_dim, 
@@ -22,7 +22,7 @@ class FuseMergeNetAgent(nn.Module):
                  reset_heads = False,
                  encoder_from_base = False,
                  use_alpha_scale = True,
-                 fuse_shared = True, 
+                 fuse_shared = False, 
                  fuse_heads = True,):
         super().__init__()
         self.delta_theta_mode = delta_theta_mode
@@ -57,9 +57,8 @@ class FuseMergeNetAgent(nn.Module):
         self.setup_heads()
 
     def setup_heads(self):
-        # will be created when calling `reset_heads`
         if self.fuse_heads:
-            logger.debug("FuseNet fuse heads")
+            logger.debug("CKA-RL fuse heads")
             self.fc_mean = FuseLinear(256, 
                                     self.act_dim, alpha=self.alpha, 
                                     alpha_scale=self.alpha_scale, 
@@ -139,10 +138,8 @@ class FuseMergeNetAgent(nn.Module):
     def load(dirname,
              obs_dim, 
             act_dim, 
-            base_dir=None,
-            latest_dir=None, 
             map_location=None, reset_heads=False):
-        model = FuseMergeNetAgent(obs_dim,act_dim,None,None)
+        model = CkaRlAgent(obs_dim,act_dim,None,None)
         model.fc = torch.load(f"{dirname}/fc.pt", map_location=map_location)
         model.fc_mean = torch.load(f"{dirname}/fc_mean.pt", map_location=map_location)
         model.fc_logstd = torch.load(f"{dirname}/fc_logstd.pt", map_location=map_location)
@@ -179,10 +176,6 @@ class FuseMergeNetAgent(nn.Module):
                 self.merge_vectors(self.fc_mean_vectors, self.fc_logstd_vectors)
                 logger.debug(self.fc_mean_vectors['weight'].shape)
                 logger.debug(self.fc_logstd_vectors['weight'].shape)
-            # if self.fuse_encoder:
-            #     logger.info("Setup actor's vectors")
-            #     latest_model = torch.load(f"{latest_dir}/encoder.pt", map_location=None)
-            #     self.encoder_vectors = latest_model.get_vectors()   
             
     def setup_alpha(self, num_vectors, fix_alpha, alpha_init, alpha_major, alpha_factor, use_alpha_scale):
         if num_vectors > 0:

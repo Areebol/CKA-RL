@@ -3,6 +3,15 @@ import argparse
 import random
 from tasks import tasks
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -14,56 +23,41 @@ def parse_args():
             "simple",
             "componet",
             "finetune",
-            "from-scratch",
             "prognet",
             "packnet",
-            "fusenet",
-            "fusenet_merge",
+            "cka-rl",
             "masknet",
             "cbpnet",
-            "rewire",
-            "creus"
+            "crelus"
         ],
         required=True,
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--no-run", default=False, action="store_true")
-
     parser.add_argument("--start-mode", type=int, default=0)
     parser.add_argument("--tag", type=str, default="Debug")
-    parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--fuse_shared", action="store_true")
-    parser.add_argument("--fuse_heads", action="store_true")
-    parser.add_argument("--pool_size", default=4)
+    parser.add_argument("--debug", type=str2bool, default=False)
+    parser.add_argument("--pool_size", default=9)
     parser.add_argument("--encoder_from_base", action="store_true")
     return parser.parse_args()
 
 
 args = parse_args()
 
-modes = list(range(24)) if args.algorithm != "simple" else list(range(10))
+modes = list(range(20)) if args.algorithm != "simple" else list(range(10))
 # args.start_mode = 3
-# NOTE: If the algoritm is not `simple`, it always should start from the second task
-if args.algorithm not in ["simple", "packnet", "prognet", "fusenet", "fusenet_merge", "masknet", "cbpnet", "rewire", "creus"] and args.start_mode == 0:
+if args.algorithm not in ["simple", "packnet", "prognet", "cka-rl", "masknet", "cbpnet", "crelus"] and args.start_mode == 0:
     start_mode = 1
 else:
     start_mode = args.start_mode
 
 run_name = (
-    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'fusenet', 'fusenet_merge', 'masknet', 'cbpnet', 'rewire', 'creus'] else 'simple'}__run_sac__{args.seed}"
+    lambda task_id: f"task_{task_id}__{args.algorithm if task_id > 0 or args.algorithm in ['packnet', 'prognet', 'cka-rl', 'masknet', 'cbpnet', 'crelus'] else 'simple'}__run_sac__{args.seed}"
 )
 
 first_idx = modes.index(start_mode)
 for i, task_id in enumerate(modes[first_idx:]):
     params = f"--model-type={args.algorithm} --task-id={task_id} --seed={args.seed} --tag={args.tag}"
-    if args.fuse_shared:
-        params += " --fuse-shared" 
-    else:
-        params += " --no-fuse-shared"
-    if args.fuse_heads:
-        params += " --fuse-heads" 
-    else:
-        params += " --no-fuse-heads"
     if args.debug:
         params += " --total-timesteps=50"
         params += " --learning_starts=5"
@@ -78,12 +72,12 @@ for i, task_id in enumerate(modes[first_idx:]):
 
     if first_idx > 0 or i > 0:
         # multiple previous modules
-        if args.algorithm in ["componet", "prognet", "fusenet", "fusenet_merge"]:
+        if args.algorithm in ["componet", "prognet", "cka-rl"]:
             params += " --prev-units"
             for i in modes[: modes.index(task_id)]:
                 params += f" {save_dir}/{run_name(i)}"
         # single previous module
-        elif args.algorithm in ["finetune", "packnet", "masknet", "cbpnet", "rewire", "creus"]:
+        elif args.algorithm in ["finetune", "packnet", "masknet", "cbpnet", "crelus"]:
             params += f" --prev-units {save_dir}/{run_name(task_id-1)}"
 
     # Launch experiment

@@ -3,13 +3,11 @@ import pandas as pd
 import pathlib
 from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 import os, sys
 import argparse
 from tabulate import tabulate
 
-NUM_TASKS = 24
+NUM_TASKS = 20
 
 def parse_args():
     # fmt: off
@@ -22,10 +20,6 @@ def parse_args():
         help="filename of the CSV to store the processed tensorboard results. Once processed, can be used as cache.")
     parser.add_argument("--tag", default="Debug", type=str)
     parser.add_argument("--smoothing-window", type=int, default=100)
-    parser.add_argument("--eval-csv", type=str, default="data/eval_results.csv",
-        help="path to the CSV where the results of evaluations are stored. If the file doesn't exist, forgetting is not computed.")
-    parser.add_argument("--no-plots", default=True, action="store_true")
-    parser.add_argument("--fuse-type", default="fusenet", type=str,choices=["fusenet", "fusenet_merge"])
     # fmt: on
     return parser.parse_args()
 
@@ -66,9 +60,6 @@ def parse_tensorboard(path, scalars, single_pts=[]):
     if sum([s not in ea.Tags()["scalars"] for s in scalars]) > 0:
         print(f"** Scalar not found. Skipping file {path}")
         return None
-    # assert all(
-    #     s in ea.Tags()["scalars"] for s in scalars
-    # ), f"some scalars were not found in the event accumulator: {ea.Tags()['scalars']}"
 
     md = parse_metadata(ea)
 
@@ -197,7 +188,7 @@ def compute_forward_transfer(df, methods, smoothing_window):
     return results
 
 
-def compute_performance(df, methods, col="charts/test_success", fuse_type="fusenet"):
+def compute_performance(df, methods):
     table = []
     avgs = [[] for _ in range(len(methods))]
     results = {}
@@ -207,7 +198,7 @@ def compute_performance(df, methods, col="charts/test_success", fuse_type="fusen
         for j, m in enumerate(methods):
             task_id = i if m != "simple" else i % 10
 
-            method = "simple" if task_id == 0 and m in ["componet", "finetune", fuse_type, "fusenet_merge"] else m
+            method = "simple" if task_id == 0 and m in ["componet", "finetune", "fusenet_merge"] else m
 
             s = df[
                 (df["task_id"] == task_id)
@@ -334,7 +325,6 @@ def process_eval(df, perf_data):
 
 if __name__ == "__main__":
     sys.path.append("../../")
-    from utils import style
 
     args = parse_args()
     METHOD_NAMES = {
@@ -343,19 +333,16 @@ if __name__ == "__main__":
         "componet": "CompoNet",
         "prognet": "ProgressiveNet",
         "packnet": "PackNet",
-        # "fusenet": "FuseNet",
-        "fusenet_merge": "FuseNet",
-        # "masknet": "MaskNet",
-        # "rewire": "Rewire",
-        # "cbpnet": "CBP",
-        # "creus": "CRELUS",
+        "cka_rl": "CKA-RL",
+        "masknet": "MaskNet",
+        "crelus": "CRELUS",
     }
     # hardcoded settings
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
-    methods = ["simple", "componet", "finetune", "prognet", "packnet", args.fuse_type, "masknet", "rewire", "cbpnet", "creus"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", args.fuse_type, "MaskNet", "Rewire", "CBP", "CReLUs"]
+    methods = ["simple", "componet", "finetune", "prognet", "packnet", "cka-rl", "masknet", "cbpnet", "crelus"]
+    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "CKA-RL", "MaskNet", "CReLUs"]
     method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
@@ -397,151 +384,3 @@ if __name__ == "__main__":
 
     data_perf = compute_performance(df, methods, args.fuse_type)
     ft_data = compute_forward_transfer(df, methods, args.smoothing_window)
-
-    # if os.path.exists(args.eval_csv):
-        # eval_perf, eval_forg = process_eval(pd.read_csv(args.eval_csv), data_perf)
-
-
-    #
-    # Save summary CSV
-    #
-    # fname = f"./data/{args.tag}/summary_data_mw.csv"
-    # with open(fname, "w") as f:
-    #     f.write("env,method,task id,perf,perf std,ft,forg,forg std\n")
-    #     for task_id in range(20):
-    #         for method in df["model_type"].unique():
-    #             if method in ["finetune", "simple"]:
-    #                 perf = eval_perf[method]["avgs"][task_id % 10]
-    #                 perf_std = eval_perf[method]["stds"][task_id % 10]
-    #                 forg, forg_std = eval_forg[method][task_id % 10]
-    #             else:
-    #                 perf, perf_std = data_perf[method][task_id]
-    #                 forg, forg_std = 0, 0
-
-    #             if method == "simple" or task_id == 0:
-    #                 ft = 0
-    #             else:
-    #                 ft = ft_data[method][task_id - 1]
-    #             f.write(
-    #                 f"metaworld,{METHOD_NAMES[method]},{task_id},{perf},{perf_std},{ft},{forg},{forg_std}\n"
-    #             )
-    # print(f"\n*** A summary of the results has been saved to `{fname}` ***\n")
-
-    if args.no_plots:
-        quit()
-
-    #
-    # Plotting
-    #
-    # assert len(methods) == len(
-    #     method_colors
-    # ), "Number of colors must match number of methods"
-
-    # fig, axes = plt.subplots(nrows=len(methods) + 1, figsize=(10, 8))
-
-    # #
-    # # Plot all the method together
-    # #
-    # ax = axes[0]
-    # for env in range(20):
-    #     # print(f"* task {env}:")
-    #     for method, color in zip(methods, method_colors):
-    #         task_id = env if method != "simple" else env % 10
-    #         s = df[(df["model_type"] == method) & (df["task_id"] == task_id)]
-
-    #         offset = env * total_timesteps
-
-    #         # this happens if an algorithm is not run for a task
-    #         if s.empty:
-    #             ax.plot([offset], [0], c="white")
-    #             continue
-
-    #         x, y, std = smooth_avg(
-    #             s, xkey="step", ykey="value", w=args.smoothing_window
-    #         )
-
-    #         ax.plot(x + offset, y, c=color, linewidth=0.8)
-    #         ax.set_ylabel("Success")
-
-    # ax.set_xticks(
-    #     np.arange(20) * 1e6, [f"{i}" for i in range(20)], fontsize=7, color="dimgray"
-    # )
-    # ax.vlines(
-    #     x=np.arange(20) * 1e6,
-    #     ymin=0.0,
-    #     ymax=1,
-    #     colors="tab:gray",
-    #     alpha=0.3,
-    #     linestyles="dashed",
-    #     linewidths=0.7,
-    # )
-
-    # style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    # #
-    # # Plot all methods separately
-    # #
-
-    # for i, (method, color) in enumerate(zip(methods, method_colors)):
-    #     ax = axes[i + 1]
-    #     ax.vlines(
-    #         x=np.arange(20) * 1e6,
-    #         ymin=0.0,
-    #         ymax=1,
-    #         colors="tab:gray",
-    #         alpha=0.3,
-    #         linestyles="dashed",
-    #         linewidths=0.7,
-    #     )
-    #     ax.set_xticks(
-    #         np.arange(20) * 1e6,
-    #         [f"{i}" for i in range(20)],
-    #         fontsize=7,
-    #         color="dimgray",
-    #     )
-    #     ax.set_ylabel(f"{fancy_names[i]}\n\nSuccess")
-    #     for env in range(20):
-    #         task_id = env if method != "simple" else env % 10
-
-    #         m = "simple" if env == 0 and method in ["componet", "finetune", args.fuse_type] else method
-    #         s = df[(df["model_type"] == m) & (df["task_id"] == task_id)]
-
-    #         offset = env * total_timesteps
-
-    #         # this happens if an algorithm is not run for a task
-    #         if s.empty:
-    #             if method == "simple":
-    #                 print(f"Empty in simple: task={task_id}")
-    #             ax.plot([offset], [0], c="white")
-    #             continue
-
-    #         x, y, std = smooth_avg(
-    #             s, xkey="step", ykey="value", w=args.smoothing_window
-    #         )
-    #         ax.plot(x + offset, y, c=color, linewidth=0.8)
-
-    #         ax.fill_between(
-    #             x + offset,
-    #             np.maximum(y - std, 0),
-    #             np.minimum(y + std, 1.0),
-    #             alpha=0.3,
-    #             color=color,
-    #         )
-
-    #     style(fig, ax=ax, legend=False, grid=False, ax_math_ticklabels=False)
-
-    # # only applied to the last `ax` (plot)
-    # ax.set_xlabel("Task ID")
-
-    # lines = [Line2D([0], [0], color=c) for c in method_colors]
-    # fig.legend(
-    #     lines,
-    #     fancy_names,
-    #     fancybox=False,
-    #     frameon=False,
-    #     loc="outside lower center",
-    #     ncols=len(methods),
-    # )
-
-    # plt.savefig(f"./data/{args.tag}/success_curves_metaworld.pdf", pad_inches=0, bbox_inches="tight")
-    # plt.show()
