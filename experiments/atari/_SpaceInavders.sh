@@ -1,6 +1,6 @@
 SEED=42
 ENV="ALE/SpaceInvaders-v5"
-TRAIN_MODES="--first-mode 4 --last-mode 9"
+TRAIN_MODES="--first-mode 0 --last-mode 9"
 export CUDA_VISIBLE_DEVICES=1
 # python run_experiments.py --env $ENV --method_type Baseline  $TRAIN_MODES --seed $SEED --tag main
 # python run_experiments.py --env $ENV --method_type Finetune  $TRAIN_MODES --seed $SEED  --tag main
