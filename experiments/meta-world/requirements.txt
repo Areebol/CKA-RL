@@ -84,3 +84,4 @@ wandb==0.16.1
 Werkzeug==3.0.1
 tqdm
 loguru
+tabulate

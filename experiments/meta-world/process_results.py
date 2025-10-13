@@ -327,60 +327,23 @@ if __name__ == "__main__":
     sys.path.append("../../")
 
     args = parse_args()
-    METHOD_NAMES = {
-        "simple": "Baseline",
-        "finetune": "FT",
-        "componet": "CompoNet",
-        "prognet": "ProgressiveNet",
-        "packnet": "PackNet",
-        "cka_rl": "CKA-RL",
-        "masknet": "MaskNet",
-        "crelus": "CRELUS",
-    }
     # hardcoded settings
     scalar = "charts/success"
     final_success = "charts/test_success"
     total_timesteps = 1e6
     methods = ["simple", "componet", "finetune", "prognet", "packnet", "cka-rl", "masknet", "cbpnet", "crelus"]
-    fancy_names = ["Baseline", "CompoNet", "FT", "ProgressiveNet", "PackNet", "CKA-RL", "MaskNet", "CReLUs"]
-    method_colors = ["darkgray", "tab:blue", "tab:orange", "tab:green", "tab:purple", "tab:red"]
 
     #
     # Extract data from tensorboard results to an actually useful CSV
     #
-    args.save_csv = f"data/{args.tag}/agg_results.csv"
+    args.save_csv = f"data/{args.tag}/extract_results.csv"
     exists = os.path.exists(args.save_csv)
-    if args.no_cache or (not exists and not args.no_cache):
-        dfs = []
-        for path in tqdm(list(pathlib.Path(args.runs_dir).rglob("*events.out*"))):
-            # print("*** Processing ", path)
-            res = parse_tensorboard(str(path), [scalar], [final_success])
-            if res is not None:
-                dic, md = res
-            else:
-                print("No data. Skipping...")
-                continue
-
-            df = dic[scalar]
-            df = df[["step", "value"]]
-            df["seed"] = md["seed"]
-            df["task_id"] = md["task_id"]
-            df["model_type"] = md["model_type"]
-
-            if final_success in md:
-                df[final_success] = md[final_success]
-
-            dfs.append(df)
-        df = pd.concat(dfs)
-        df.to_csv(args.save_csv, index=False)
-    else:
-        print(f"\n\nReloading cache data from: {args.save_csv}")
-        df = pd.read_csv(args.save_csv)
+    print(f"\n\nReloading cache data from: {args.save_csv}")
+    df = pd.read_csv(args.save_csv)
 
     #
     # Compute performance and forward transfer
     #
-    count(df, methods)
 
-    data_perf = compute_performance(df, methods, args.fuse_type)
+    data_perf = compute_performance(df, methods)
     ft_data = compute_forward_transfer(df, methods, args.smoothing_window)

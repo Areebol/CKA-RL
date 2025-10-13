@@ -91,31 +91,25 @@ Reinforcement Learning enables agents to learn optimal behaviors through interac
     ```bash
     # Example: Run CKA-RL
     SEED=42
-
-    cd experiments/meta-world/
+    TAG=main
     python run_experiments.py \
-        --method_type CKA-RL \
-        --env $ATARI_ENV \
-        --first-mode 0 \
-        --last-mode 7 \             # Use --last-mode 9 for SpaceInvaders
-        --seed $SEED \
-        --tag main
+            --algorithm cka-rl \
+            --tag $TAG
+
     ```
     > 🗂️ The training log and results will be automatically saved to:  
-    > `./experiments/atari/data/Freeway/main`
+    > `./experiments/meta-world/runs/main`
 
 2. **Process Results**
 
     > ⚠️ Note: Before running the following scripts, make sure all methods (including baselines) have been executed — otherwise process_results.py may fail due to missing result files.
     ```bash
+    TAG=main
     # Step 1. Gather all results from experiment logs
-    python gather_rt_results.py \
-        --base_dir ./experiments/atari/data/Freeway/main \
-        --env Freeway             # Options: Freeway, SpaceInvaders
+    python extract_results.py --tag $TAG
 
     # Step 2. Process the aggregated results
-    python process_results.py \
-        --data-dir ./experiments/atari/data/Freeway/main
+    python process_results.py --tag $TAG
     ```
 
 ## 💬 Citation

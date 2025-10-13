@@ -346,32 +346,29 @@ if __name__ == "__main__":
     runs_dir = f"./runs/{args.tag}"
     save_csv = f"./data/{args.tag}/extract_results.csv"
     exists = os.path.exists(save_csv)
-    # if args.no_cache or (not exists and not args.no_cache):
-    dfs = []
-    for path in tqdm(list(pathlib.Path(runs_dir).rglob("*events.out*"))):
-        # print("*** Processing ", path)
-        res = parse_tensorboard(str(path), [scalar], [final_success])
-        if res is not None:
-            dic, md = res
-        else:
-            print("No data. Skipping...")
-            continue
+    if args.no_cache or (not exists and not args.no_cache):
+        dfs = []
+        for path in tqdm(list(pathlib.Path(runs_dir).rglob("*events.out*"))):
+            # print("*** Processing ", path)
+            res = parse_tensorboard(str(path), [scalar], [final_success])
+            if res is not None:
+                dic, md = res
+            else:
+                print("No data. Skipping...")
+                continue
 
-        df = dic[scalar]
-        df = df[["step", "value"]]
-        df["seed"] = md["seed"]
-        df["task_id"] = md["task_id"]
-        df["model_type"] = md["model_type"]
+            df = dic[scalar]
+            df = df[["step", "value"]]
+            df["seed"] = md["seed"]
+            df["task_id"] = md["task_id"]
+            df["model_type"] = md["model_type"]
 
-        if final_success in md:
-            df[final_success] = md[final_success]
+            if final_success in md:
+                df[final_success] = md[final_success]
 
-        dfs.append(df)
-    df = pd.concat(dfs)
-    os.makedirs(os.path.dirname(save_csv), exist_ok=True)
-    df.to_csv(save_csv, index=False)
-
-    a = pd.read_csv('./data/agg_results.csv')
-    b = pd.read_csv(f'./data/{args.tag}/extract_results.csv')
-    c = pd.concat([a, b])
-    c.to_csv(f'./data/{args.tag}/agg_results.csv')
+            dfs.append(df)
+        df = pd.concat(dfs)
+        os.makedirs(os.path.dirname(save_csv), exist_ok=True)
+        df.to_csv(save_csv, index=False)
+    else:
+        print(f"** Loading cached CSV file {save_csv}")
